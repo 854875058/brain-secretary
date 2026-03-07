@@ -10,6 +10,17 @@ logger = logging.getLogger(__name__)
 class QQSender:
     def __init__(self, napcat_url: str):
         self.base_url = napcat_url.rstrip('/')
+        self._client: httpx.AsyncClient | None = None
+
+    async def _get_client(self) -> httpx.AsyncClient:
+        if self._client is None:
+            self._client = httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=5.0))
+        return self._client
+
+    async def aclose(self) -> None:
+        if self._client is not None:
+            await self._client.aclose()
+            self._client = None
 
     @staticmethod
     def _normalize_media_source(media_source: str, field_name: str = 'media_source') -> str:
@@ -90,22 +101,22 @@ class QQSender:
         return str(message)[:120]
 
     async def call_action(self, endpoint: str, payload: dict[str, Any] | None = None, *, timeout: float = 20) -> dict[str, Any]:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{self.base_url}/{endpoint}",
-                json=payload or {},
-                timeout=timeout,
-            )
-            response.raise_for_status()
-            try:
-                return response.json()
-            except Exception:
-                return {
-                    'status': 'ok' if response.is_success else 'failed',
-                    'retcode': 0 if response.is_success else response.status_code,
-                    'data': None,
-                    'raw_text': response.text,
-                }
+        client = await self._get_client()
+        response = await client.post(
+            f"{self.base_url}/{endpoint}",
+            json=payload or {},
+            timeout=timeout,
+        )
+        response.raise_for_status()
+        try:
+            return response.json()
+        except Exception:
+            return {
+                'status': 'ok' if response.is_success else 'failed',
+                'retcode': 0 if response.is_success else response.status_code,
+                'data': None,
+                'raw_text': response.text,
+            }
 
     async def _post_message(self, endpoint: str, payload: dict[str, Any]) -> dict[str, Any]:
         return await self.call_action(endpoint, payload, timeout=20)

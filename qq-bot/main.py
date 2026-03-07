@@ -169,6 +169,13 @@ async def startup():
     logger.info(f"管理员 QQ: {ADMIN_QQ}")
     logger.info(f"已注册 {len(projects)} 个项目")
 
+@app.on_event("shutdown")
+async def shutdown():
+    if ai is not None:
+        await ai.aclose()
+    await qq.aclose()
+
+
 
 async def handle_agent_command(message: str, user_id: int, reply_func):
     """处理 Agent 调度指令"""
