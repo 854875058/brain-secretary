@@ -670,6 +670,60 @@ def extract_turn_text(result: OpenClawTurnResult | str) -> str:
     return str(result.text or '').strip()
 
 
+async def run_ai_turn(
+    *,
+    session_id: str,
+    prompt: str,
+    chat_type: str,
+    user_id: int,
+    group_id: int | None,
+    evolution_mode: bool,
+    evolution_kind: str | None,
+    evolution_trigger_text: str,
+    evolution_user_message: str,
+    reply_func,
+) -> OpenClawTurnResult | str:
+    evolution_state = None
+    chat_scope = '群聊' if chat_type == 'group' else '私聊'
+
+    if evolution_mode:
+        logger.info(
+            f"触发自助进化: chat={chat_type} group_id={group_id} user_id={user_id} kind={evolution_kind}"
+        )
+        if should_seed_capability_backlog(evolution_trigger_text, evolution_mode):
+            await seed_capability_checklist(user_id, chat_type=chat_type, group_id=group_id)
+        if evolution_kind == 'evolve':
+            evolution_state = await begin_evolution_request(
+                chat_type=chat_type,
+                user_qq=user_id,
+                group_id=group_id,
+                user_message=evolution_user_message,
+            )
+            await reply_func(build_evolution_ack_text(evolution_state))
+
+    if evolution_mode and not OPENCLAW_ENABLED:
+        reply: OpenClawTurnResult | str = '当前未启用 OpenClaw，自助进化/记忆固化无法真正落地到本地文件。'
+    elif OPENCLAW_ENABLED:
+        try:
+            reply = await openclaw.agent_turn_result(session_id, prompt)
+        except OpenClawError as e:
+            logger.error(f"OpenClaw {chat_scope}调用失败: {e}")
+            reply = str(e)
+    elif ai:
+        reply = await ai.chat(prompt)
+    else:
+        reply = 'AI 后端未配置：请启用 openclaw 或配置 penguin_api'
+
+    if evolution_state is not None:
+        await update_evolution_request_from_sync_reply(
+            chat_type=chat_type,
+            user_qq=user_id,
+            group_id=group_id,
+            reply_text=extract_turn_text(reply),
+        )
+    return reply
+
+
 @app.post("/qq/message")
 async def handle_message(request: Request):
     try:
@@ -734,39 +788,18 @@ async def handle_message(request: Request):
                 await reply_func(str(e))
                 return {"status": "ok"}
 
-            evolution_state = None
-            if evolution_mode:
-                logger.info(f"触发自助进化: chat=private user_id={user_id} kind={evolution_kind}")
-                if should_seed_capability_backlog(plain_message, evolution_mode):
-                    await seed_capability_checklist(int(user_id), chat_type="private", group_id=None)
-                if evolution_kind == "evolve":
-                    evolution_state = await begin_evolution_request(
-                        chat_type="private",
-                        user_qq=int(user_id),
-                        group_id=None,
-                        user_message=plain_message or rich_message,
-                    )
-                    await reply_func(build_evolution_ack_text(evolution_state))
-
-            if evolution_mode and not OPENCLAW_ENABLED:
-                reply: OpenClawTurnResult | str = "当前未启用 OpenClaw，自助进化/记忆固化无法真正落地到本地文件。"
-            elif OPENCLAW_ENABLED:
-                try:
-                    reply = await openclaw.agent_turn_result(session_id, prompt)
-                except OpenClawError as e:
-                    logger.error(f"OpenClaw 私聊调用失败: {e}")
-                    reply = str(e)
-            elif ai:
-                reply = await ai.chat(prompt)
-            else:
-                reply = "AI 后端未配置：请启用 openclaw 或配置 penguin_api"
-            if evolution_state is not None:
-                await update_evolution_request_from_sync_reply(
-                    chat_type="private",
-                    user_qq=int(user_id),
-                    group_id=None,
-                    reply_text=extract_turn_text(reply),
-                )
+            reply = await run_ai_turn(
+                session_id=session_id,
+                prompt=prompt,
+                chat_type="private",
+                user_id=int(user_id),
+                group_id=None,
+                evolution_mode=evolution_mode,
+                evolution_kind=evolution_kind,
+                evolution_trigger_text=plain_message,
+                evolution_user_message=plain_message or rich_message,
+                reply_func=reply_func,
+            )
             await deliver_private_turn(user_id, reply)
 
         elif message_type == "group":
@@ -797,39 +830,18 @@ async def handle_message(request: Request):
                 await reply_func(str(e))
                 return {"status": "ok"}
 
-            evolution_state = None
-            if evolution_mode:
-                logger.info(f"触发自助进化: chat=group group_id={group_id} user_id={user_id} kind={evolution_kind}")
-                if should_seed_capability_backlog(clean_plain or plain_message, evolution_mode):
-                    await seed_capability_checklist(int(user_id), chat_type="group", group_id=int(group_id) if group_id else None)
-                if evolution_kind == "evolve":
-                    evolution_state = await begin_evolution_request(
-                        chat_type="group",
-                        user_qq=int(user_id),
-                        group_id=int(group_id) if group_id else None,
-                        user_message=clean_plain or plain_message or group_rich_message,
-                    )
-                    await reply_func(build_evolution_ack_text(evolution_state))
-
-            if evolution_mode and not OPENCLAW_ENABLED:
-                reply = "当前未启用 OpenClaw，自助进化/记忆固化无法真正落地到本地文件。"
-            elif OPENCLAW_ENABLED:
-                try:
-                    reply = await openclaw.agent_turn_result(session_id, prompt)
-                except OpenClawError as e:
-                    logger.error(f"OpenClaw 群聊调用失败: {e}")
-                    reply = str(e)
-            elif ai:
-                reply = await ai.chat(prompt)
-            else:
-                reply = "AI 后端未配置：请启用 openclaw 或配置 penguin_api"
-            if evolution_state is not None:
-                await update_evolution_request_from_sync_reply(
-                    chat_type="group",
-                    user_qq=int(user_id),
-                    group_id=int(group_id) if group_id else None,
-                    reply_text=extract_turn_text(reply),
-                )
+            reply = await run_ai_turn(
+                session_id=session_id,
+                prompt=prompt,
+                chat_type="group",
+                user_id=int(user_id),
+                group_id=int(group_id) if group_id else None,
+                evolution_mode=evolution_mode,
+                evolution_kind=evolution_kind,
+                evolution_trigger_text=clean_plain or plain_message,
+                evolution_user_message=clean_plain or plain_message or group_rich_message,
+                reply_func=reply_func,
+            )
             await deliver_group_turn(group_id, user_id, reply)
 
         return {"status": "ok"}
