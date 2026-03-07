@@ -1,0 +1,34 @@
+{
+  "mode": "windows-local-napcat",
+  "bridge_host": "0.0.0.0",
+  "napcat_host": "100.88.77.66",
+  "instances": [
+    {
+      "slug": "brain",
+      "role": "大脑号",
+      "agent_id": "qq-main",
+      "bridge_host": "0.0.0.0",
+      "napcat_host": "100.88.77.66",
+      "bridge_port": 8011,
+      "onebot_port": 3001
+    },
+    {
+      "slug": "tech",
+      "role": "技术号",
+      "agent_id": "brain-secretary-dev",
+      "bridge_host": "0.0.0.0",
+      "napcat_host": "100.88.77.66",
+      "bridge_port": 8012,
+      "onebot_port": 3002
+    },
+    {
+      "slug": "review",
+      "role": "方案验收号",
+      "agent_id": "brain-secretary-review",
+      "bridge_host": "0.0.0.0",
+      "napcat_host": "100.88.77.66",
+      "bridge_port": 8013,
+      "onebot_port": 3003
+    }
+  ]
+}

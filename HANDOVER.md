@@ -221,3 +221,23 @@ python3 scripts/qq_bot_multi.py bootstrap --json
 python3 scripts/qq_bot_multi.py status --json
 python3 scripts/napcat_multi.py qr --json
 ```
+
+
+---
+
+## Windows 本地三开 QQ 方案
+
+当云服务器扫码频繁触发 QQ 风控时，优先改成：
+
+- Windows 本地：`QQ + NapCat`
+- 服务器：`QQ Bridge + OpenClaw`
+- 内网：`Tailscale`
+
+关键文件：
+
+- Windows 脚手架：`scripts/windows_local_qq_multi.ps1`
+- 服务器桥接：`scripts/qq_bot_multi.py`
+- 详细文档：`docs/windows-local-qq-multi.md`
+- 示例 profile：`ops/windows-local-qq-profile.example.json`
+
+服务器使用 `python3 scripts/qq_bot_multi.py import-profile --profile ...` 导入本地生成的 profile 即可。

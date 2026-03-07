@@ -14,13 +14,14 @@
 
 - `qq-main` 作为总协调大脑
 - `brain-secretary-dev` 负责主项目工程实施
+- `brain-secretary-review` 负责方案补充与验收复核
 
 ---
 
 ## 当前实际链路
 
 ```text
-QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> brain-secretary-dev(按需) -> qq-main -> QQ Bot -> QQ
+QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents(按需) -> qq-main -> QQ Bot -> QQ
 ```
 
 ---
@@ -31,6 +32,7 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> brain-secretary-dev(按需) -> qq
 |---|---|---|
 | `qq-main` | 协调大脑 | `/root/.openclaw/workspace` |
 | `brain-secretary-dev` | 主项目工程子 agent | `/root/brain-secretary` |
+| `brain-secretary-review` | 方案 / 验收子 agent | `/root/brain-secretary` |
 
 ---
 
@@ -78,7 +80,7 @@ brain-secretary/
 - 当前关键端口：
   - OpenClaw 公网入口：`80`
   - OpenClaw 内部 Dashboard：`18789`
-- `qq-bot/` 目录当前仅保留为历史兼容实现与迁移参考，不是现网入口。
+- `qq-bot/` 当前不是现网主入口，但已重新承担“多 QQ 辅助入口 / Windows 本地 QQ 对接”能力。
 
 ---
 
@@ -87,6 +89,7 @@ brain-secretary/
 - 想了解整体部署 → `SETUP.md`
 - 想看当前运维方式 → `docs/systemd-ops.md`
 - 想看 OpenClaw 多 Agent 配置 → `docs/openclaw-setup.md`
+- 想看 Windows 本地三开 QQ 对接 → `docs/windows-local-qq-multi.md`
 - 想快速接手当前状态 → `HANDOVER.md`
 - 想看自动化维护规则 → `CLAUDE.md`
 - 想看 AI 自动提交约定 → `AI_AUTOCOMMIT.md`

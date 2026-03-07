@@ -133,6 +133,38 @@ python3 scripts/napcat_multi.py qr --json
 python3 scripts/napcat_multi.py stop
 ```
 
+
+---
+
+## Windows 本地三开 QQ（推荐）
+
+如果云服务器扫码容易触发 QQ 风控，推荐改成：
+
+- Windows 本地运行 `QQ + NapCat`
+- 服务器运行 `QQ Bridge + OpenClaw`
+- 通过 `Tailscale` 把两边接到同一内网
+
+对应脚本与文档：
+
+- Windows 脚手架：`scripts/windows_local_qq_multi.ps1`
+- 服务器桥接脚本：`scripts/qq_bot_multi.py`
+- 详细说明：`docs/windows-local-qq-multi.md`
+- 示例 profile：`ops/windows-local-qq-profile.example.json`
+
+典型流程：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/windows_local_qq_multi.ps1 `
+  -ServerBridgeHost <服务器 Tailscale IP>
+```
+
+Windows 脚本生成完 `server-bridge-profile.json` 后，在服务器执行：
+
+```bash
+python3 scripts/qq_bot_multi.py import-profile --profile ops/windows-local-qq-profile.json --json
+python3 scripts/qq_bot_multi.py restart --json
+```
+
 ---
 
 ## Windows 手工启动（兼容保留）
@@ -187,8 +219,10 @@ curl http://127.0.0.1:18789/
 - Linux 运维文档：`docs/systemd-ops.md`
 - NapCat 多实例脚本：`scripts/napcat_multi.py`
 - QQ Bridge 多实例脚本：`scripts/qq_bot_multi.py`
+- Windows 本地三开脚手架：`scripts/windows_local_qq_multi.ps1`
 - NapCat 多实例根目录：`/root/napcat-multi`
 - QQ Bridge 多实例根目录：`/root/qq-bot-multi`
+- Windows 本地三开文档：`docs/windows-local-qq-multi.md`
 - 旧桥接代码：`qq-bot/`（历史实现，非现网入口）
 
 ---

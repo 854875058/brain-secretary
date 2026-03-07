@@ -161,3 +161,15 @@ NapCat(instance) -> QQ Bridge(instance) -> OpenClaw(target agent)
 
 - `scripts/napcat_multi.py`
 - `scripts/qq_bot_multi.py`
+
+
+## Windows 本地 QQ / NapCat 辅助入口
+
+如果 QQ 风控不允许云服务器直接扫码，可改成：
+
+- Windows 本地运行 `QQ + NapCat`
+- 服务器运行 `QQ Bridge + OpenClaw`
+- 用 `scripts/windows_local_qq_multi.ps1` 生成本地配置
+- 用 `python3 scripts/qq_bot_multi.py import-profile --profile ...` 把本地 profile 导入服务器
+
+详细说明见：`docs/windows-local-qq-multi.md`

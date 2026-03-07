@@ -175,8 +175,10 @@ python3 /root/brain-secretary/scripts/napcat_multi.py stop
 - 运维真源：`/root/brain-secretary/ops/deployment_manifest.json`
 - NapCat 多实例脚本：`/root/brain-secretary/scripts/napcat_multi.py`
 - QQ Bridge 多实例脚本：`/root/brain-secretary/scripts/qq_bot_multi.py`
+- Windows 本地三开脚手架：`/root/brain-secretary/scripts/windows_local_qq_multi.ps1`
 - NapCat 多实例根目录：`/root/napcat-multi`
 - QQ Bridge 多实例根目录：`/root/qq-bot-multi`
+- Windows 本地三开文档：`/root/brain-secretary/docs/windows-local-qq-multi.md`
 - 公网反代配置：`/etc/nginx/sites-available/openclaw-public.conf`
 - 旧桥接代码：`/root/brain-secretary/qq-bot/`
 

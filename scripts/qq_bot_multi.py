@@ -25,6 +25,8 @@ DEFAULT_INSTANCES = [
         'slug': 'brain',
         'role': '大脑号',
         'agent_id': 'qq-main',
+        'bridge_host': '127.0.0.1',
+        'napcat_host': '127.0.0.1',
         'bridge_port': 8011,
         'onebot_port': 3001,
         'thinking': 'low',
@@ -35,6 +37,8 @@ DEFAULT_INSTANCES = [
         'slug': 'tech',
         'role': '技术号',
         'agent_id': 'brain-secretary-dev',
+        'bridge_host': '127.0.0.1',
+        'napcat_host': '127.0.0.1',
         'bridge_port': 8012,
         'onebot_port': 3002,
         'thinking': 'low',
@@ -45,6 +49,8 @@ DEFAULT_INSTANCES = [
         'slug': 'review',
         'role': '方案验收号',
         'agent_id': 'brain-secretary-review',
+        'bridge_host': '127.0.0.1',
+        'napcat_host': '127.0.0.1',
         'bridge_port': 8013,
         'onebot_port': 3003,
         'thinking': 'low',
@@ -54,13 +60,30 @@ DEFAULT_INSTANCES = [
 ]
 BASE_CONFIG_PATH = REPO_ROOT / 'qq-bot' / 'config.yaml'
 PID_POLL_INTERVAL = 0.2
+PROFILE_TOP_LEVEL_FIELDS = {'bridge_host', 'napcat_host'}
+PROFILE_INSTANCE_FIELDS = {
+    'slug',
+    'role',
+    'agent_id',
+    'bridge_host',
+    'napcat_host',
+    'bridge_port',
+    'onebot_port',
+    'thinking',
+    'evolution_auto_trigger',
+    'prompt_prefix',
+}
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='QQ Bot 多实例桥接管理脚本')
-    parser.add_argument('action', choices=['init', 'start', 'stop', 'restart', 'status', 'summary', 'bootstrap'])
+    parser.add_argument(
+        'action',
+        choices=['init', 'start', 'stop', 'restart', 'status', 'summary', 'bootstrap', 'import-profile', 'print-example'],
+    )
     parser.add_argument('--root', default=str(DEFAULT_ROOT), help='桥接实例根目录')
     parser.add_argument('--instance', nargs='*', help='实例名，可选 brain tech review；默认全部')
+    parser.add_argument('--profile', help='profile JSON 文件路径，用于 import-profile')
     parser.add_argument('--json', action='store_true', help='JSON 输出')
     return parser.parse_args()
 
@@ -155,11 +178,16 @@ def read_pid(path: Path) -> int | None:
         return None
 
 
-def select_definitions(root: Path, selected: list[str] | None) -> list[dict[str, Any]]:
+def current_definitions(root: Path) -> list[dict[str, Any]]:
     definitions = []
     for definition in DEFAULT_INSTANCES:
         metadata = load_json(metadata_path(root, definition['slug']), {})
         definitions.append({**definition, **metadata})
+    return definitions
+
+
+def select_definitions(root: Path, selected: list[str] | None) -> list[dict[str, Any]]:
+    definitions = current_definitions(root)
     if not selected:
         return definitions
     selected_set = set(selected)
@@ -199,10 +227,19 @@ def whitelist_commands() -> list[str]:
     return cleaned or ['/status', '/disk', '/crawl', '/logs', '/help', '/projects', '/tasks', '/task', '/evolve', '/remember']
 
 
+def napcat_url(definition: dict[str, Any]) -> str:
+    host = str(definition.get('napcat_host') or '127.0.0.1').strip() or '127.0.0.1'
+    return f'http://{host}:{int(definition["onebot_port"])}'
+
+
+def bridge_bind_host(definition: dict[str, Any]) -> str:
+    return str(definition.get('bridge_host') or '127.0.0.1').strip() or '127.0.0.1'
+
+
 def render_config(definition: dict[str, Any]) -> dict[str, Any]:
     return {
         'napcat': {
-            'url': f"http://127.0.0.1:{definition['onebot_port']}",
+            'url': napcat_url(definition),
         },
         'openclaw': {
             'enabled': True,
@@ -251,7 +288,7 @@ def env_for(root: Path, definition: dict[str, Any]) -> dict[str, str]:
     env['QQ_BOT_CONFIG_PATH'] = str(config_path(root, definition['slug']))
     env['QQ_BOT_RUNTIME_ROOT'] = str(runtime_root(root, definition['slug']))
     env['QQ_BOT_OPENCLAW_TRANSCRIPT_DIR'] = transcript_dir_for(definition['agent_id'])
-    env['QQ_BOT_HOST'] = '127.0.0.1'
+    env['QQ_BOT_HOST'] = bridge_bind_host(definition)
     env['QQ_BOT_PORT'] = str(definition['bridge_port'])
     return env
 
@@ -310,12 +347,12 @@ def stop_instance(root: Path, definition: dict[str, Any]) -> dict[str, Any]:
 
 
 def health_url(definition: dict[str, Any]) -> str:
-    return f"http://127.0.0.1:{definition['bridge_port']}/"
+    return f'http://127.0.0.1:{int(definition["bridge_port"])}//'.replace('//', '/', 1)
 
 
 def fetch_health(definition: dict[str, Any]) -> dict[str, Any] | None:
     try:
-        with urlopen(health_url(definition), timeout=2) as response:
+        with urlopen(f'http://127.0.0.1:{int(definition["bridge_port"])}' + '/', timeout=2) as response:
             body = response.read().decode('utf-8', errors='replace')
         return json.loads(body)
     except (OSError, URLError, ValueError, json.JSONDecodeError):
@@ -332,8 +369,11 @@ def status_info(root: Path, definition: dict[str, Any]) -> dict[str, Any]:
         'agent_id': definition['agent_id'],
         'pid': pid,
         'running': running,
+        'bridge_host': bridge_bind_host(definition),
         'bridge_port': definition['bridge_port'],
         'onebot_port': definition['onebot_port'],
+        'napcat_host': str(definition.get('napcat_host') or '127.0.0.1'),
+        'napcat_url': napcat_url(definition),
         'health': health,
         'config_path': str(config_path(root, definition['slug'])),
         'log_path': str(runtime_root(root, definition['slug']) / 'logs' / 'bot.log'),
@@ -357,6 +397,72 @@ def print_records(records: list[dict[str, Any]], as_json: bool) -> None:
         print(json.dumps(item, ensure_ascii=False))
 
 
+def example_profile() -> dict[str, Any]:
+    return {
+        'mode': 'windows-local-napcat',
+        'bridge_host': '0.0.0.0',
+        'napcat_host': '100.88.77.66',
+        'instances': [
+            {
+                'slug': definition['slug'],
+                'role': definition['role'],
+                'agent_id': definition['agent_id'],
+                'bridge_host': '0.0.0.0',
+                'napcat_host': '100.88.77.66',
+                'bridge_port': definition['bridge_port'],
+                'onebot_port': definition['onebot_port'],
+            }
+            for definition in DEFAULT_INSTANCES
+        ],
+    }
+
+
+def validate_profile(profile: dict[str, Any], selected: list[str] | None = None) -> None:
+    instances = profile.get('instances') or []
+    if not isinstance(instances, list):
+        raise SystemExit('profile.instances 必须是数组')
+    known_slugs = {item['slug'] for item in DEFAULT_INSTANCES}
+    selected_set = set(selected or [])
+    for item in instances:
+        if not isinstance(item, dict):
+            raise SystemExit('profile.instances 中的每一项都必须是对象')
+        slug = str(item.get('slug') or '').strip()
+        if not slug:
+            raise SystemExit('profile.instances[].slug 不能为空')
+        if slug not in known_slugs:
+            raise SystemExit(f'profile 中存在未知实例: {slug}')
+        if selected_set and slug not in selected_set:
+            continue
+
+
+def load_profile(profile_path: Path) -> dict[str, Any]:
+    if not profile_path.exists():
+        raise SystemExit(f'profile 不存在: {profile_path}')
+    data = json.loads(profile_path.read_text(encoding='utf-8'))
+    if not isinstance(data, dict):
+        raise SystemExit('profile 顶层必须是对象')
+    return data
+
+
+def apply_profile(root: Path, profile: dict[str, Any], selected: list[str] | None = None) -> list[dict[str, Any]]:
+    validate_profile(profile, selected)
+    defaults = {key: profile[key] for key in PROFILE_TOP_LEVEL_FIELDS if key in profile}
+    overrides_by_slug = {}
+    for item in profile.get('instances') or []:
+        if not isinstance(item, dict):
+            continue
+        slug = str(item.get('slug') or '').strip()
+        if not slug:
+            continue
+        overrides_by_slug[slug] = {key: item[key] for key in PROFILE_INSTANCE_FIELDS if key in item}
+
+    records = []
+    for definition in select_definitions(root, selected):
+        merged = {**definition, **defaults, **overrides_by_slug.get(definition['slug'], {})}
+        records.append(prepare_instance(root, merged))
+    return records
+
+
 def write_root_readme(root: Path) -> None:
     lines = [
         '# QQ Bot 多实例桥接',
@@ -371,9 +477,15 @@ def write_root_readme(root: Path) -> None:
         )
     lines.extend([
         '',
+        '本脚本支持两种模式：',
+        '- 默认本机模式：NapCat 和 Bridge 都在服务器本机，host=127.0.0.1',
+        '- Windows 本地 QQ 模式：NapCat 在 Windows，本脚本通过 profile 把 `napcat_host` 指到 Windows Tailscale IP，同时把 `bridge_host` 放开到 `0.0.0.0`',
+        '',
         '常用命令：',
         '- python3 /root/brain-secretary/scripts/qq_bot_multi.py bootstrap',
         '- python3 /root/brain-secretary/scripts/qq_bot_multi.py status --json',
+        '- python3 /root/brain-secretary/scripts/qq_bot_multi.py print-example',
+        '- python3 /root/brain-secretary/scripts/qq_bot_multi.py import-profile --profile /path/to/profile.json --json',
         '- python3 /root/brain-secretary/scripts/qq_bot_multi.py stop',
     ])
     write_text(root / 'README.md', '\n'.join(lines) + '\n')
@@ -384,49 +496,63 @@ def main() -> int:
     root = Path(args.root)
     root.mkdir(parents=True, exist_ok=True)
     write_root_readme(root)
-    selected = select_definitions(root, args.instance)
+    selected = args.instance
+
+    if args.action == 'print-example':
+        print(json.dumps(example_profile(), ensure_ascii=False, indent=2))
+        return 0
+
+    if args.action == 'import-profile':
+        if not args.profile:
+            raise SystemExit('import-profile 需要 --profile <path>')
+        profile = load_profile(Path(args.profile))
+        records = apply_profile(root, profile, selected)
+        print_records(records, args.json)
+        return 0
+
+    selected_definitions = select_definitions(root, selected)
 
     if args.action == 'init':
-        records = [prepare_instance(root, definition) for definition in selected]
+        records = [prepare_instance(root, definition) for definition in selected_definitions]
         print_records(records, args.json)
         return 0
 
     if args.action == 'start':
-        records = [start_instance(root, definition) for definition in selected]
+        records = [start_instance(root, definition) for definition in selected_definitions]
         print_records(records, args.json)
         return 0
 
     if args.action == 'stop':
-        records = [stop_instance(root, definition) for definition in selected]
+        records = [stop_instance(root, definition) for definition in selected_definitions]
         print_records(records, args.json)
         return 0
 
     if args.action == 'restart':
         records = []
-        for definition in selected:
+        for definition in selected_definitions:
             records.append(stop_instance(root, definition))
             records.append(start_instance(root, definition))
         print_records(records, args.json)
         return 0
 
     if args.action == 'status':
-        print_records([status_info(root, definition) for definition in selected], args.json)
+        print_records([status_info(root, definition) for definition in selected_definitions], args.json)
         return 0
 
     if args.action == 'summary':
         records = []
-        for definition in selected:
+        for definition in selected_definitions:
             info = status_info(root, definition)
-            info['health_url'] = health_url(definition)
+            info['health_url'] = f'http://127.0.0.1:{int(definition["bridge_port"])}' + '/'
             records.append(info)
         print_records(records, args.json)
         return 0
 
     if args.action == 'bootstrap':
-        for definition in selected:
+        for definition in selected_definitions:
             prepare_instance(root, definition)
-        start_records = [start_instance(root, definition) for definition in selected]
-        ready_records = [wait_ready(root, definition) for definition in selected]
+        start_records = [start_instance(root, definition) for definition in selected_definitions]
+        ready_records = [wait_ready(root, definition) for definition in selected_definitions]
         records = []
         for start_record, ready_record in zip(start_records, ready_records):
             records.append({**start_record, **ready_record})

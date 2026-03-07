@@ -59,7 +59,10 @@
     "napcat_multi_script": "scripts/napcat_multi.py",
     "napcat_multi_root": "/root/napcat-multi",
     "qq_bot_multi_script": "scripts/qq_bot_multi.py",
-    "qq_bot_multi_root": "/root/qq-bot-multi"
+    "qq_bot_multi_root": "/root/qq-bot-multi",
+    "windows_local_qq_multi_script": "scripts/windows_local_qq_multi.ps1",
+    "windows_local_qq_multi_doc": "docs/windows-local-qq-multi.md",
+    "windows_local_qq_profile_example": "ops/windows-local-qq-profile.example.json"
   },
   "platforms": {
     "linux": {
@@ -220,7 +223,9 @@
         "py -3 scripts\\ops_manager.py info",
         "py -3 scripts\\ops_manager.py status all",
         "py -3 scripts\\ops_manager.py start all",
-        "py -3 scripts\\ops_manager.py restart backend"
+        "py -3 scripts\\ops_manager.py restart backend",
+        "powershell -ExecutionPolicy Bypass -File scripts\\windows_local_qq_multi.ps1 -ServerBridgeHost <server-host>",
+        "python3 scripts/qq_bot_multi.py print-example"
       ],
       "components": {
         "gateway": {
@@ -232,6 +237,30 @@
             }
           ],
           "start_hint": "openclaw gateway"
+        }
+      },
+      "auxiliary": {
+        "local_multi_qq": {
+          "mode": "Windows local QQ + NapCat, server-side bridge + OpenClaw",
+          "windows_script": "scripts/windows_local_qq_multi.ps1",
+          "server_bridge_script": "scripts/qq_bot_multi.py",
+          "doc": "docs/windows-local-qq-multi.md",
+          "profile_example": "ops/windows-local-qq-profile.example.json",
+          "bridge_ports": [
+            8011,
+            8012,
+            8013
+          ],
+          "onebot_ports": [
+            3001,
+            3002,
+            3003
+          ],
+          "agent_map": {
+            "brain": "qq-main",
+            "tech": "brain-secretary-dev",
+            "review": "brain-secretary-review"
+          }
         }
       }
     }

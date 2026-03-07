@@ -105,8 +105,10 @@
 - OpenClaw 内部入口：`http://127.0.0.1:18789/`
 - NapCat 多实例脚本：`scripts/napcat_multi.py`
 - QQ Bridge 多实例脚本：`scripts/qq_bot_multi.py`
+- Windows 本地三开脚手架：`scripts/windows_local_qq_multi.ps1`
 - NapCat 多实例根目录：`/root/napcat-multi`
 - QQ Bridge 多实例根目录：`/root/qq-bot-multi`
+- Windows 本地三开文档：`docs/windows-local-qq-multi.md`
 - 已退役历史页面：`/chat-history`、`/api/chat-history`（公网返回 `410`）
 - 旧桥接代码：`qq-bot/`（仅历史参考，不是现网入口）
 
