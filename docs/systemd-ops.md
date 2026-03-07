@@ -149,6 +149,21 @@ nginx -t && systemctl reload nginx
 
 ---
 
+## NapCat 多实例示例（非现网入口）
+
+现网入口仍然是 `qqbot/default -> qq-main`，但如果要给多个扫码 QQ 号做联调，使用：
+
+```bash
+python3 /root/brain-secretary/scripts/napcat_multi.py bootstrap --refresh-workdir
+python3 /root/brain-secretary/scripts/napcat_multi.py status --json
+python3 /root/brain-secretary/scripts/napcat_multi.py qr --json
+python3 /root/brain-secretary/scripts/napcat_multi.py stop
+```
+
+默认示例目录：`/root/napcat-multi/{brain,tech,review}`。
+
+---
+
 ## 关键路径
 
 - OpenClaw 配置：`/root/.openclaw/openclaw.json`
@@ -157,6 +172,8 @@ nginx -t && systemctl reload nginx
 - 脑 workspace：`/root/.openclaw/workspace`
 - 运维脚本：`/root/brain-secretary/scripts/ops_manager.py`
 - 运维真源：`/root/brain-secretary/ops/deployment_manifest.json`
+- NapCat 多实例脚本：`/root/brain-secretary/scripts/napcat_multi.py`
+- NapCat 多实例根目录：`/root/napcat-multi`
 - 公网反代配置：`/etc/nginx/sites-available/openclaw-public.conf`
 - 旧桥接代码：`/root/brain-secretary/qq-bot/`
 
@@ -191,7 +208,22 @@ openclaw agents bind --agent qq-main --bind qqbot:default
 
 这是预期行为。历史聊天记录页面已随旧桥接链路退役。
 
-### 5) 想确认旧服务确实下线
+### 5) `qq-main` 能收消息但一直超时
+
+优先检查模型代理是否已经应用了流式兼容修复：
+
+```bash
+systemctl --user status openclaw-model-proxy.service --no-pager -n 40
+curl -sS http://127.0.0.1:18080/healthz
+openclaw agent --agent qq-main --session-id qq-main-recover-test --message '只回复一个字：到' --thinking minimal --timeout 45 --json
+```
+
+如果这里卡住，优先看 `/root/.openclaw/model-proxy.mjs` 是否仍会：
+
+- 把 `stream=true` 转成上游 JSON 再回放 SSE
+- 把 `vllm/gpt-5.4` 改写成 `gpt-5.4`
+
+### 6) 想确认旧服务确实下线
 
 ```bash
 systemctl --user status openclaw-qq-bridge.service napcat-qq.service

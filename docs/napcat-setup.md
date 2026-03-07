@@ -1,7 +1,7 @@
 # NapCat 配置与问题排查
 
 > 文档: docs/napcat-setup.md
-> 更新: 2026-03-06
+> 更新: 2026-03-07
 
 ---
 
@@ -16,18 +16,33 @@
 
 ---
 
-## 当前 Linux 无头运行方式（2026-03-06）
+## 当前 Linux 辅助运行方式（2026-03-07）
 
-当前在线环境采用：
+当前现网入口已经改成 OpenClaw 原生 `qqbot` 渠道，旧的 `napcat-qq.service` 已退役。
 
-- 启动脚本：`/root/Napcat/start-qq.sh`
-- `systemd` Unit：`napcat-qq.service`
-- 管理命令：`systemctl --user start|stop|restart napcat-qq.service`
+如果只是为了多 QQ 号扫码联调，请使用新的多实例脚本：
+
+- 管理脚本：`/root/brain-secretary/scripts/napcat_multi.py`
+- 示例根目录：`/root/napcat-multi`
+- 示例映射：`brain -> qq-main`、`tech -> brain-secretary-dev`、`review -> brain-secretary-review`
 
 关键文件：
 
-- 日志：`/root/Napcat/qq.log`
-- 二维码：`/root/Napcat/opt/QQ/resources/app/app_launcher/napcat/cache/qrcode.png`
+- `brain` 日志：`/root/napcat-multi/brain/logs/qq.log`
+- `brain` 二维码：`/root/napcat-multi/brain/workdir/cache/qrcode.png`
+- `tech` 日志：`/root/napcat-multi/tech/logs/qq.log`
+- `tech` 二维码：`/root/napcat-multi/tech/workdir/cache/qrcode.png`
+- `review` 日志：`/root/napcat-multi/review/logs/qq.log`
+- `review` 二维码：`/root/napcat-multi/review/workdir/cache/qrcode.png`
+
+常用命令：
+
+```bash
+python3 /root/brain-secretary/scripts/napcat_multi.py bootstrap --refresh-workdir
+python3 /root/brain-secretary/scripts/napcat_multi.py status --json
+python3 /root/brain-secretary/scripts/napcat_multi.py qr --json
+python3 /root/brain-secretary/scripts/napcat_multi.py stop
+```
 
 如果是在 Linux 服务器上维护，请优先阅读：`docs/systemd-ops.md`
 
@@ -134,26 +149,31 @@ Linux 当前实际位置：
 
 ## Linux 常见排查
 
-### `qq-bot` 报 `All connection attempts failed`
+### 多实例扫码看不到二维码
 
 优先检查：
 
-- QQ 是否已经扫码登录完成
-- `napcat-qq.service` 是否在运行
-- `qq-bot/config.yaml` 里的 `napcat.url` 是否仍指向 `http://127.0.0.1:3000`
+- 目标实例是否已经启动
+- 对应 `qq.log` 里是否出现 `二维码解码URL`
+- 对应 `qrcode.png` 是否已经落盘
 
 排查命令：
 
 ```bash
-systemctl --user status napcat-qq.service
-tail -f /root/Napcat/qq.log
-ss -lntp | rg ':3000 |:6099 '
+python3 /root/brain-secretary/scripts/napcat_multi.py status --json
+python3 /root/brain-secretary/scripts/napcat_multi.py qr --json
 ```
 
-### 没法直接看终端二维码
-
-直接打开二维码图片：
+也可以直接看这 3 个二维码图片：
 
 ```bash
-/root/Napcat/opt/QQ/resources/app/app_launcher/napcat/cache/qrcode.png
+/root/napcat-multi/brain/workdir/cache/qrcode.png
+/root/napcat-multi/tech/workdir/cache/qrcode.png
+/root/napcat-multi/review/workdir/cache/qrcode.png
+```
+
+### 多实例端口是否正常
+
+```bash
+ss -lntp | rg ':3001 |:3002 |:3003 |:6101 |:6102 |:6103 '
 ```

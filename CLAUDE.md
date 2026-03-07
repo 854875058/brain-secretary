@@ -26,6 +26,7 @@
 
 - `qq-main`：总协调大脑，workspace=`/root/.openclaw/workspace`
 - `brain-secretary-dev`：主项目工程子 agent，workspace=`/root/brain-secretary`
+- `brain-secretary-review`：方案 / 验收子 agent，workspace=`/root/brain-secretary`
 
 ### 当前 QQ 入口规则
 
@@ -51,7 +52,7 @@
 - `qq-main` 已绑定 `qqbot:default`
 - `channels.qqbot.markdownSupport = false`
 - `plugins.installs.qqbot.spec = "@openclaw-china/qqbot"`
-- `qq-main.subagents.allowAgents = ["brain-secretary-dev"]`
+- `qq-main.subagents.allowAgents = ["brain-secretary-dev", "brain-secretary-review"]`
 - `tools.agentToAgent.enabled = true`
 - `tools.sessions.visibility = "all"`
 - `agents.defaults.subagents.*` 已配置并发、超时、归档等默认值
@@ -101,6 +102,8 @@
 - 当前插件来源：`@openclaw-china/qqbot`（npm）
 - OpenClaw 公网入口：`http://110.41.170.155/`
 - OpenClaw 内部入口：`http://127.0.0.1:18789/`
+- NapCat 多实例脚本：`scripts/napcat_multi.py`
+- NapCat 多实例根目录：`/root/napcat-multi`
 - 已退役历史页面：`/chat-history`、`/api/chat-history`（公网返回 `410`）
 - 旧桥接代码：`qq-bot/`（仅历史参考，不是现网入口）
 
@@ -138,6 +141,9 @@ openclaw agents bindings --json
 - `plugins.installs.qqbot` 已记录标准 npm 安装来源：`@openclaw-china/qqbot`
 - `QQ Bot default` 渠道已配置并启用
 - `qqbot:default -> qq-main` 绑定已生效
+- `brain-secretary-review` 已加入 OpenClaw agent 列表，并允许被 `qq-main` 协调调用
+- `model-proxy.mjs` 已兼容 `stream=true -> 上游 JSON -> 本地 SSE`，并会把 `vllm/gpt-5.4` 转成上游可识别的 `gpt-5.4`
+- `scripts/napcat_multi.py` 已生成 3 个隔离的扫码示例目录：`/root/napcat-multi/{brain,tech,review}`
 - 旧 `NapCat / qq-bot(FastAPI Bridge)` 现网服务已停用
 - `/chat-history` 与 `/api/chat-history` 已在公网明确返回 `410`，避免旧入口残留 502
 

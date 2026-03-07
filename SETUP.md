@@ -23,6 +23,7 @@ Windows 仍可手工启动，但以 Linux 常驻方案为主。
 |---|---|---|
 | `qq-main` | 协调大脑 | `/root/.openclaw/workspace` |
 | `brain-secretary-dev` | 主项目工程子 agent | `/root/brain-secretary` |
+| `brain-secretary-review` | 方案 / 验收子 agent | `/root/brain-secretary` |
 
 当前 QQ 渠道绑定：`qqbot:default -> qq-main`。
 
@@ -113,6 +114,25 @@ python3 scripts/ops_manager.py logs gateway -n 80
 
 ---
 
+## NapCat 多实例扫码示例（辅助测试）
+
+这套路径不是现网入口，只用于你要的 3 个独立扫码 QQ 示例：
+
+- 根目录：`/root/napcat-multi`
+- 管理脚本：`scripts/napcat_multi.py`
+- 映射关系：`brain -> qq-main`、`tech -> brain-secretary-dev`、`review -> brain-secretary-review`
+
+常用命令：
+
+```bash
+python3 scripts/napcat_multi.py bootstrap --refresh-workdir
+python3 scripts/napcat_multi.py status --json
+python3 scripts/napcat_multi.py qr --json
+python3 scripts/napcat_multi.py stop
+```
+
+---
+
 ## Windows 手工启动（兼容保留）
 
 ### 1) 启动 OpenClaw
@@ -163,6 +183,8 @@ curl http://127.0.0.1:18789/
 - 运维真源：`ops/deployment_manifest.json`
 - OpenClaw 配置文档：`docs/openclaw-setup.md`
 - Linux 运维文档：`docs/systemd-ops.md`
+- NapCat 多实例脚本：`scripts/napcat_multi.py`
+- NapCat 多实例根目录：`/root/napcat-multi`
 - 旧桥接代码：`qq-bot/`（历史实现，非现网入口）
 
 ---

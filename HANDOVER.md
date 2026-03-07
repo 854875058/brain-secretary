@@ -30,6 +30,9 @@
 - `brain-secretary-dev`
   - 角色：主项目工程子 agent
   - workspace：`/root/brain-secretary`
+- `brain-secretary-review`
+  - 角色：方案 / 验收子 agent
+  - workspace：`/root/brain-secretary`
 
 当前生效 OpenClaw 配置文件：`/root/.openclaw/openclaw.json`
 
@@ -40,6 +43,8 @@
 - `qq-main.subagents.allowAgents`
 - `tools.agentToAgent.enabled=true`
 - `tools.sessions.visibility=all`
+- `model-proxy.mjs` 会把 OpenClaw 的流式请求转成上游 JSON 再回放为 SSE
+- `model-proxy.mjs` 会把 `vllm/gpt-5.4` 转成上游可识别的 `gpt-5.4`
 
 ---
 
@@ -118,6 +123,8 @@ ss -lntp | rg ':80 |:18789 '
 - QQ Bot 插件目录：`/root/.openclaw/extensions/qqbot`
 - 当前插件来源：`@openclaw-china/qqbot`（npm）
 - OpenClaw 公网入口：`http://110.41.170.155/`
+- NapCat 多实例脚本：`/root/brain-secretary/scripts/napcat_multi.py`
+- NapCat 多实例根目录：`/root/napcat-multi`
 - OpenClaw 内部入口：`http://127.0.0.1:18789/`
 - 旧桥接代码：`/root/brain-secretary/qq-bot/`
 - 已退役历史页面：`http://110.41.170.155/chat-history`、`http://110.41.170.155/api/chat-history`（返回 `410`）
@@ -162,3 +169,25 @@ ss -lntp | rg ':80 |:18789 '
 - `docs/openclaw-setup.md`
 - `docs/systemd-ops.md`
 - `ops/deployment_manifest.json`
+
+
+---
+
+## NapCat 多实例示例（辅助测试）
+
+这组示例目录不是现网入口，只用于多 QQ 号扫码联调：
+
+- `brain`：`大脑号` -> `qq-main`
+- `tech`：`技术号` -> `brain-secretary-dev`
+- `review`：`方案验收号` -> `brain-secretary-review`
+
+目录位置：`/root/napcat-multi`
+
+常用命令：
+
+```bash
+python3 scripts/napcat_multi.py bootstrap --refresh-workdir
+python3 scripts/napcat_multi.py status --json
+python3 scripts/napcat_multi.py qr --json
+python3 scripts/napcat_multi.py stop
+```

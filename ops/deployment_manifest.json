@@ -21,6 +21,11 @@
           "agent_id": "brain-secretary-dev",
           "workspace": "/root/brain-secretary",
           "role": "primary engineering subagent"
+        },
+        {
+          "agent_id": "brain-secretary-review",
+          "workspace": "/root/brain-secretary",
+          "role": "review and acceptance subagent"
         }
       ],
       "model_proxy_requirement": "proxy must preserve messages and tools for OpenClaw tool calling",
@@ -50,7 +55,9 @@
     "legacy_qq_bridge_entry": "qq-bot/main.py",
     "legacy_qq_bridge_config": "qq-bot/config.yaml",
     "legacy_qq_bridge_logs": "qq-bot/logs",
-    "legacy_napcat_start_script": "/root/Napcat/start-qq.sh"
+    "legacy_napcat_start_script": "/root/Napcat/start-qq.sh",
+    "napcat_multi_script": "scripts/napcat_multi.py",
+    "napcat_multi_root": "/root/napcat-multi"
   },
   "platforms": {
     "linux": {
@@ -76,7 +83,10 @@
         "python3 scripts/ops_manager.py restart public_proxy",
         "python3 scripts/ops_manager.py logs gateway -n 80",
         "openclaw channels list",
-        "openclaw agents bindings --json"
+        "openclaw agents bindings --json",
+        "python3 scripts/napcat_multi.py bootstrap --refresh-workdir",
+        "python3 scripts/napcat_multi.py status --json",
+        "python3 scripts/napcat_multi.py qr --json"
       ],
       "components": {
         "model_proxy": {
@@ -105,6 +115,11 @@
               "agent_id": "brain-secretary-dev",
               "workspace": "/root/brain-secretary",
               "role": "engineering"
+            },
+            {
+              "agent_id": "brain-secretary-review",
+              "workspace": "/root/brain-secretary",
+              "role": "review"
             }
           ]
         },
@@ -127,7 +142,37 @@
         }
       },
       "extra_locations": {
-        "user_systemd_dir": "/root/.config/systemd/user"
+        "user_systemd_dir": "/root/.config/systemd/user",
+        "napcat_multi_root": "/root/napcat-multi"
+      },
+      "auxiliary": {
+        "napcat_multi_examples": {
+          "script": "/root/brain-secretary/scripts/napcat_multi.py",
+          "root": "/root/napcat-multi",
+          "instances": [
+            {
+              "slug": "brain",
+              "role": "大脑号",
+              "agent_id": "qq-main",
+              "webui_port": 6101,
+              "onebot_port": 3001
+            },
+            {
+              "slug": "tech",
+              "role": "技术号",
+              "agent_id": "brain-secretary-dev",
+              "webui_port": 6102,
+              "onebot_port": 3002
+            },
+            {
+              "slug": "review",
+              "role": "方案验收号",
+              "agent_id": "brain-secretary-review",
+              "webui_port": 6103,
+              "onebot_port": 3003
+            }
+          ]
+        }
       }
     },
     "windows": {
