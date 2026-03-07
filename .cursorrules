@@ -3,6 +3,6 @@
 规则：
 - 默认只修改 `/root/brain-secretary`。
 - 不要提交 `/root/.openclaw/**`、日志、数据库、收件箱、虚拟环境、本地密钥和现网私密配置。
-- 如果用户没有明确禁止，完成修改后必须执行：`bash scripts/git_sync.sh -m "<简短提交说明>"`
-- 如果不确定说明，可直接执行：`bash scripts/git_sync.sh`
+- 如果用户没有明确禁止，完成修改后必须执行：`bash scripts/git_sync.sh -m "<类型: 中文说明本次修改内容>"`
+- 提交说明默认用中文概述这次改了什么；如果不确定说明，可直接执行：`bash scripts/git_sync.sh`
 - 如果 `brain.autopush=true` 且已绑定 `origin`，提交后会自动尝试推送。

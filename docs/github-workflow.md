@@ -84,7 +84,7 @@ bash scripts/git_bootstrap.sh --clear-proxy
 
 ```bash
 cd /root/brain-secretary
-bash scripts/git_sync.sh -m "chore: initial import"
+bash scripts/git_sync.sh -m "chore: 初始化仓库并导入当前代码"
 ```
 
 如果已经打开 `--auto-push on`，post-commit hook 会自动推送；否则你可以手工执行：
@@ -97,13 +97,17 @@ git push -u origin main
 
 ## AI 自动提交约定
 
+提交说明建议统一使用中文，直接说明“这次提交改了什么”，推荐格式：`类型: 中文概述本次修改内容`。
+
+例如：`fix: 修复 QQ Bot 请求超时后的连接复用问题`。
+
 后续让 AI 修改代码时，可以直接要求它遵循这条规则：
 
 ```text
-改完后自动执行 bash scripts/git_sync.sh -m "<提交说明>"
+改完后自动执行 bash scripts/git_sync.sh -m "<类型: 中文说明本次修改内容>"
 ```
 
-仓库里的 `AGENTS.md` 和 `CLAUDE.md` 也已经补了这条约定，方便后续助手读取并执行。
+仓库里的 `AGENTS.md`、`CLAUDE.md`、`AI_AUTOCOMMIT.md` 等文件都已经补了这条约定，方便后续助手读取并执行。
 
 只要同时满足下面 3 个条件，就会接近“改完自动提交并推送”：
 

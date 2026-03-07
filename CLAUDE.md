@@ -82,7 +82,7 @@
 
 - 当前只维护 `/root/brain-secretary` 这一套主 GitHub 仓库。
 - 不要把 `/root/.openclaw`、`qq-bot/config.yaml`、`qq-bot/logs/`、运行态数据库、收件箱和虚拟环境提交到远端。
-- 一次修改完成后，如果用户没有明确禁止，必须执行：`bash scripts/git_sync.sh -m "<简短提交说明>"`
+- 一次修改完成后，如果用户没有明确禁止，必须执行：`bash scripts/git_sync.sh -m "<类型: 中文说明本次修改内容>"`
 - 自动推送开关使用仓库配置 `brain.autopush`；开启后 post-commit hook 会在本地提交后自动尝试推送 `origin`。
 - 初次配置 Git 用户、远端和代理，优先执行：`bash scripts/git_bootstrap.sh`
 - 对不读取 `CLAUDE.md` 的工具，补充说明见：`AI_AUTOCOMMIT.md`、`.github/copilot-instructions.md`、`.cursorrules`
