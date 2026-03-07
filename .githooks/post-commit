@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if [ "$(git config --bool --get brain.autopush || echo false)" != "true" ]; then
+  exit 0
+fi
+
+branch="$(git branch --show-current 2>/dev/null || true)"
+if [ -z "$branch" ]; then
+  exit 0
+fi
+
+if ! git remote get-url origin >/dev/null 2>&1; then
+  exit 0
+fi
+
+if ! git push -u origin "$branch"; then
+  echo "[post-commit] push failed, local commit kept." >&2
+fi

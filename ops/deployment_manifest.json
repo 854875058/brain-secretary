@@ -1,0 +1,265 @@
+{
+  "project": {
+    "name": "Brain Secretary",
+    "service_chain": "QQ -> NapCat -> qq-bot(FastAPI Bridge) -> OpenClaw(qq-main) -> child agents",
+    "repo_root": ".",
+    "primary_docs": {
+      "handover": "HANDOVER.md",
+      "setup": "SETUP.md",
+      "systemd_ops": "docs/systemd-ops.md",
+      "claude_rules": "CLAUDE.md"
+    }
+  },
+  "models": {
+    "primary_brain": {
+      "runtime": "OpenClaw Agent",
+      "agent_id": "qq-main",
+      "thinking": "low",
+      "recommended_setup_model": "penguin/claude-sonnet-4-6",
+      "model": "vllm/gpt-5.4",
+      "child_agents": [
+        {
+          "agent_id": "brain-secretary-dev",
+          "workspace": "/root/brain-secretary",
+          "role": "primary engineering subagent"
+        },
+        {
+          "agent_id": "agent-hub-dev",
+          "workspace": "/root/agent-hub",
+          "role": "secondary engineering subagent"
+        }
+      ],
+      "model_proxy_requirement": "proxy must preserve messages and tools for OpenClaw tool calling"
+    },
+    "fallback_api": {
+      "runtime": "Penguin API",
+      "model": "claude-sonnet-4-6"
+    }
+  },
+  "paths": {
+    "ops_script": "scripts/ops_manager.py",
+    "ops_manifest": "ops/deployment_manifest.json",
+    "openclaw_setup_script": "scripts/openclaw_setup.ps1",
+    "qq_bridge_entry": "qq-bot/main.py",
+    "qq_bridge_config": "qq-bot/config.yaml",
+    "qq_bridge_data": "qq-bot/data",
+    "qq_bridge_logs": "qq-bot/logs",
+    "project_memory": "MEMORY.md",
+    "fine_grained_memory": "memory",
+    "napcat_config_example": "qq-bot/napcat_config_example.json",
+    "openclaw_config": "/root/.openclaw/openclaw.json",
+    "openclaw_brain_workspace": "/root/.openclaw/workspace",
+    "model_proxy_script": "/root/.openclaw/model-proxy.mjs",
+    "model_proxy_env": "/root/.openclaw/model-proxy.env",
+    "public_proxy_config": "/etc/nginx/sites-available/openclaw-public.conf"
+  },
+  "platforms": {
+    "linux": {
+      "deployment_mode": "systemd-user + system-nginx",
+      "groups": {
+        "frontend": [
+          "public_proxy",
+          "napcat"
+        ],
+        "backend": [
+          "model_proxy",
+          "gateway",
+          "bridge"
+        ],
+        "all": [
+          "model_proxy",
+          "gateway",
+          "bridge",
+          "public_proxy",
+          "napcat"
+        ]
+      },
+      "usage_examples": [
+        "python3 scripts/ops_manager.py info",
+        "python3 scripts/ops_manager.py status all",
+        "python3 scripts/ops_manager.py restart backend",
+        "python3 scripts/ops_manager.py restart public_proxy",
+        "python3 scripts/ops_manager.py logs bridge -n 80"
+      ],
+      "components": {
+        "model_proxy": {
+          "unit": "openclaw-model-proxy.service",
+          "script": "/root/.openclaw/model-proxy.mjs",
+          "env_file": "/root/.openclaw/model-proxy.env",
+          "compatibility_note": "must not strip OpenClaw tool-calling fields"
+        },
+        "gateway": {
+          "unit": "openclaw-gateway.service",
+          "ports": [
+            {
+              "name": "dashboard_internal",
+              "host": "127.0.0.1",
+              "port": 18789
+            }
+          ],
+          "config_path": "/root/.openclaw/openclaw.json",
+          "agents": [
+            {
+              "agent_id": "qq-main",
+              "workspace": "/root/.openclaw/workspace",
+              "role": "brain"
+            },
+            {
+              "agent_id": "brain-secretary-dev",
+              "workspace": "/root/brain-secretary",
+              "role": "engineering"
+            },
+            {
+              "agent_id": "agent-hub-dev",
+              "workspace": "/root/agent-hub",
+              "role": "engineering"
+            }
+          ]
+        },
+        "bridge": {
+          "unit": "openclaw-qq-bridge.service",
+          "ports": [
+            {
+              "name": "http_internal",
+              "host": "127.0.0.1",
+              "port": 8000
+            }
+          ],
+          "log_path": "qq-bot/logs/bot.log",
+          "http_endpoints": {
+            "health": "http://127.0.0.1:8000/",
+            "chat_history_page_public": "http://110.41.170.155/chat-history?user_id=854875058&token=<qq-bot/config.yaml:web.history_token>",
+            "chat_history_api_public": "http://110.41.170.155/api/chat-history?user_id=854875058&token=<qq-bot/config.yaml:web.history_token>",
+            "chat_history_page_internal": "http://127.0.0.1:8000/chat-history?user_id=854875058&token=<qq-bot/config.yaml:web.history_token>",
+            "chat_history_api_internal": "http://127.0.0.1:8000/api/chat-history?user_id=854875058&token=<qq-bot/config.yaml:web.history_token>"
+          }
+        },
+        "napcat": {
+          "unit": "napcat-qq.service",
+          "start_script": "/root/Napcat/start-qq.sh",
+          "log_path": "/root/Napcat/qq.log",
+          "qrcode_path": "/root/Napcat/opt/QQ/resources/app/app_launcher/napcat/cache/qrcode.png",
+          "ports": [
+            {
+              "name": "http_api",
+              "host": "127.0.0.1",
+              "port": 3000
+            },
+            {
+              "name": "webui",
+              "host": "127.0.0.1",
+              "port": 6099
+            }
+          ],
+          "quick_login_qq": "2230906690",
+          "active_onebot_config": "/root/Napcat/opt/QQ/resources/app/app_launcher/napcat/config/onebot11_2230906690.json"
+        },
+        "public_proxy": {
+          "unit": "nginx.service",
+          "system_scope": true,
+          "config_path": "/etc/nginx/sites-available/openclaw-public.conf",
+          "ports": [
+            {
+              "name": "public_http",
+              "host": "110.41.170.155",
+              "port": 80
+            }
+          ],
+          "routes": {
+            "/": "http://127.0.0.1:18789",
+            "/chat-history": "http://127.0.0.1:8000/chat-history",
+            "/api/chat-history": "http://127.0.0.1:8000/api/chat-history"
+          }
+        }
+      },
+      "extra_locations": {
+        "user_systemd_dir": "/root/.config/systemd/user"
+      }
+    },
+    "windows": {
+      "deployment_mode": "manual-process",
+      "groups": {
+        "frontend": [
+          "napcat"
+        ],
+        "backend": [
+          "gateway",
+          "bridge"
+        ],
+        "all": [
+          "gateway",
+          "bridge",
+          "napcat"
+        ]
+      },
+      "usage_examples": [
+        "py -3 scripts\\ops_manager.py info",
+        "py -3 scripts\\ops_manager.py status all",
+        "py -3 scripts\\ops_manager.py start all",
+        "py -3 scripts\\ops_manager.py restart backend"
+      ],
+      "components": {
+        "gateway": {
+          "ports": [
+            {
+              "name": "dashboard",
+              "host": "127.0.0.1",
+              "port": 18789
+            }
+          ],
+          "start_hint": "openclaw gateway"
+        },
+        "bridge": {
+          "entry": "qq-bot/main.py",
+          "ports": [
+            {
+              "name": "http",
+              "host": "127.0.0.1",
+              "port": 8000
+            }
+          ],
+          "log_path": "qq-bot/logs/bot.log"
+        },
+        "napcat": {
+          "launcher": "D:\\NapCat\\NapCatWinBootMain.exe",
+          "qq_exe": "D:\\QQ\\QQ.exe",
+          "hook_dll": "D:\\NapCat\\NapCatWinBootHook.dll",
+          "ports": [
+            {
+              "name": "http_api",
+              "host": "127.0.0.1",
+              "port": 3000
+            },
+            {
+              "name": "webui",
+              "host": "127.0.0.1",
+              "port": 6099
+            }
+          ]
+        }
+      }
+    }
+  },
+  "components": {
+    "model_proxy": {
+      "label": "OpenClaw Model Proxy",
+      "description": "OpenClaw 模型兼容代理"
+    },
+    "gateway": {
+      "label": "OpenClaw Gateway",
+      "description": "OpenClaw 主网关 / 控制面板"
+    },
+    "bridge": {
+      "label": "QQ Bridge",
+      "description": "FastAPI Bridge，负责 NapCat -> OpenClaw -> NapCat"
+    },
+    "napcat": {
+      "label": "NapCat / QQ",
+      "description": "QQ 客户端与 OneBot 适配层"
+    },
+    "public_proxy": {
+      "label": "Public Reverse Proxy",
+      "description": "Nginx public entry for OpenClaw dashboard and chat history"
+    }
+  }
+}

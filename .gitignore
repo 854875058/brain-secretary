@@ -1,0 +1,46 @@
+# IDE
+.idea/
+.vscode/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+qq-bot/.venv/
+qq-bot/venv/
+
+# Logs and runtime files
+*.log
+*.pid
+qq-bot/logs/
+
+# Local config and secrets
+.env
+.env.*
+!.env.example
+qq-bot/config.yaml
+
+# Runtime data
+qq-bot/data/**
+!qq-bot/data/
+!qq-bot/data/openclaw-test-file.txt
+!qq-bot/data/openclaw-test-image.png
+!qq-bot/data/openclaw-test-video.mp4
+!qq-bot/data/openclaw-test-voice.wav
+
+# Local databases
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Temporary verification files
+tmp_*.py
