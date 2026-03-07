@@ -23,7 +23,6 @@ Windows 仍可手工启动，但以 Linux 常驻方案为主。
 |---|---|---|
 | `qq-main` | 协调大脑 | `/root/.openclaw/workspace` |
 | `brain-secretary-dev` | 主项目工程子 agent | `/root/brain-secretary` |
-| `agent-hub-dev` | 次级项目工程子 agent | `/root/agent-hub` |
 
 当前 QQ 渠道绑定：`qqbot:default -> qq-main`。
 
@@ -157,7 +156,6 @@ curl http://127.0.0.1:18789/
 - QQ Bot 插件目录：`/root/.openclaw/extensions/qqbot`
 - 脑 workspace：`/root/.openclaw/workspace`
 - 主仓：`/root/brain-secretary`
-- 次仓：`/root/agent-hub`
 - 运维脚本：`scripts/ops_manager.py`
 - 运维真源：`ops/deployment_manifest.json`
 - OpenClaw 配置文档：`docs/openclaw-setup.md`

@@ -152,7 +152,7 @@
 ### 已有基础
 - `CLAUDE.md` / `HANDOVER.md` 已明确：
   - `qq-main` 负责协调
-  - `brain-secretary-dev` / `agent-hub-dev` 负责工程实施
+  - `brain-secretary-dev` 负责工程实施
 - `qq-bot/bot/task_sync.py` 已有任务清单/能力清单同步逻辑
 
 ### 本轮新增

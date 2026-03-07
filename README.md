@@ -14,7 +14,6 @@
 
 - `qq-main` 作为总协调大脑
 - `brain-secretary-dev` 负责主项目工程实施
-- `agent-hub-dev` 负责次级仓工程实施 / 对照验证
 
 ---
 
@@ -32,7 +31,6 @@ QQ -> NapCat -> qq-bot(FastAPI Bridge) -> OpenClaw(qq-main) -> 子 agents -> qq-
 |---|---|---|
 | `qq-main` | 协调大脑 | `/root/.openclaw/workspace` |
 | `brain-secretary-dev` | 主项目工程子 agent | `/root/brain-secretary` |
-| `agent-hub-dev` | 次级项目工程子 agent | `/root/agent-hub` |
 
 ---
 

@@ -892,7 +892,7 @@ TASK_STATUS_CLASS = {
     "blocked": "blocked",
     "failed": "failed",
 }
-TASK_AGENT_OPTIONS = ["", "qq-main", "brain-secretary-dev", "agent-hub-dev"]
+TASK_AGENT_OPTIONS = ["", "qq-main", "brain-secretary-dev"]
 TASK_STATUS_OPTIONS = ["", "pending", "in_progress", "implemented_pending_verify", "done", "blocked", "failed"]
 AGENT_STATUS_OPTIONS = ["", "accepted", "completed successfully", "timed out", "failed", "unknown"]
 DONE_TASK_STATUSES = {"done", "completed"}

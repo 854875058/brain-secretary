@@ -21,11 +21,6 @@
           "agent_id": "brain-secretary-dev",
           "workspace": "/root/brain-secretary",
           "role": "primary engineering subagent"
-        },
-        {
-          "agent_id": "agent-hub-dev",
-          "workspace": "/root/agent-hub",
-          "role": "secondary engineering subagent"
         }
       ],
       "model_proxy_requirement": "proxy must preserve messages and tools for OpenClaw tool calling",
@@ -107,11 +102,6 @@
             {
               "agent_id": "brain-secretary-dev",
               "workspace": "/root/brain-secretary",
-              "role": "engineering"
-            },
-            {
-              "agent_id": "agent-hub-dev",
-              "workspace": "/root/agent-hub",
               "role": "engineering"
             }
           ]

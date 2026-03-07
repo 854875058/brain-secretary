@@ -26,7 +26,6 @@
 
 - `qq-main`：总协调大脑，workspace=`/root/.openclaw/workspace`
 - `brain-secretary-dev`：主项目工程子 agent，workspace=`/root/brain-secretary`
-- `agent-hub-dev`：次级项目工程子 agent，workspace=`/root/agent-hub`
 
 ### 当前 QQ 入口规则
 
@@ -39,8 +38,7 @@
 
 - `qq-main` 负责：理解意图、拆任务、派任务、验收结果、统一回复
 - `brain-secretary-dev` 负责主仓工程实施：OpenClaw 接入、运维脚本、部署文档、现网迁移与工程改造
-- `agent-hub-dev` 负责次级仓工程实施：旧机器人实现、对照方案、实验验证、迁移参照
-- 如果任务跨两个仓库、涉及架构对比、迁移整合、多点核对，默认由 `qq-main` 并行调度两个子 agent
+- 旧的次级实验仓已退役；如需旧实现对照，直接参考历史资料，不再派发到独立次仓。
 
 ### OpenClaw 配置关键点
 
@@ -51,7 +49,7 @@
 - `channels.qqbot.enabled = true`
 - `plugins.allow = ["qqbot"]`
 - `qq-main` 已绑定 `qqbot:default`
-- `qq-main.subagents.allowAgents = ["brain-secretary-dev", "agent-hub-dev"]`
+- `qq-main.subagents.allowAgents = ["brain-secretary-dev"]`
 - `tools.agentToAgent.enabled = true`
 - `tools.sessions.visibility = "all"`
 - `agents.defaults.subagents.*` 已配置并发、超时、归档等默认值
@@ -79,7 +77,7 @@
 
 ## GitHub 维护规则
 
-- 推荐把 `/root/brain-secretary` 作为主 GitHub 仓库；`/root/agent-hub` 如需长期维护再单独建仓。
+- 当前只维护 `/root/brain-secretary` 这一套主 GitHub 仓库。
 - 不要把 `/root/.openclaw`、`qq-bot/config.yaml`、`qq-bot/logs/`、运行态数据库、收件箱和虚拟环境提交到远端。
 - 一次修改完成后，如果用户没有明确禁止，必须执行：`bash scripts/git_sync.sh -m "<简短提交说明>"`
 - 自动推送开关使用仓库配置 `brain.autopush`；开启后 post-commit hook 会在本地提交后自动尝试推送 `origin`。
@@ -110,7 +108,7 @@
 - 现网 QQ 入口已切换到 OpenClaw `qqbot` 渠道，因此实际自助进化闭环由 `qq-main` + 子 agent 完成
 - `qq-main` 收到“自助进化 / 记住这个 / 写进规则 / 完成一件告诉我一件”这类诉求时，应优先：
   - 拆解任务
-  - 必要时委派 `brain-secretary-dev` / `agent-hub-dev`
+  - 必要时委派 `brain-secretary-dev`
   - 完成后回推进展
   - 把长期结论固化到规则 / 记忆 / 文档
 - 仓库里的 `qq-bot` 自助进化实现已转为历史实现，不再作为现网入口依赖

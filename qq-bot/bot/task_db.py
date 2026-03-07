@@ -91,7 +91,7 @@ CAPABILITY_CHECKLIST_ITEMS = [
         "detail": "包括网页转 Markdown、故障自诊断、部署变更同步、QQ 消息增强等。",
         "status": "in_progress",
         "sort_index": 80,
-        "assigned_agent": "agent-hub-dev",
+        "assigned_agent": "brain-secretary-dev",
         "owner_agent": "qq-main",
         "category": "capability",
         "validation": "已形成参考调研与部分页面/规则改进，待继续落地。",

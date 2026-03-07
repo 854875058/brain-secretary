@@ -1,6 +1,6 @@
 # 子 Agent 模块
 
-> 说明：2026-03-07 起，现网已经落地 `qq-main` 协调大脑 + `brain-secretary-dev` / `agent-hub-dev` 真实子 agent。具体以 `README.md`、`docs/openclaw-setup.md`、`HANDOVER.md` 为准。
+> 说明：2026-03-07 起，现网已经落地 `qq-main` 协调大脑 + `brain-secretary-dev` 真实子 agent。具体以 `README.md`、`docs/openclaw-setup.md`、`HANDOVER.md` 为准。
 
 
 > 目录: agents/

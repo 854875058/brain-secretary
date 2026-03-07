@@ -30,9 +30,6 @@
 - `brain-secretary-dev`
   - 角色：主项目工程子 agent
   - workspace：`/root/brain-secretary`
-- `agent-hub-dev`
-  - 角色：次级项目工程子 agent
-  - workspace：`/root/agent-hub`
 
 当前生效 OpenClaw 配置文件：`/root/.openclaw/openclaw.json`
 
@@ -115,7 +112,6 @@ ss -lntp | rg ':80 |:18789 '
 ## 关键路径
 
 - 主仓：`/root/brain-secretary`
-- 次仓：`/root/agent-hub`
 - OpenClaw 配置：`/root/.openclaw/openclaw.json`
 - 脑 workspace：`/root/.openclaw/workspace`
 - 运维真源：`/root/brain-secretary/ops/deployment_manifest.json`

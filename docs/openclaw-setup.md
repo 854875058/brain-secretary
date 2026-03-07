@@ -11,7 +11,6 @@
 |---|---|---|---|
 | `qq-main` | 协调大脑 | `/root/.openclaw/workspace` | 负责理解用户意图、调度子 agent、验收结果、统一回复 |
 | `brain-secretary-dev` | 主项目工程子 agent | `/root/brain-secretary` | 负责主仓工程实施与部署变更 |
-| `agent-hub-dev` | 次级项目工程子 agent | `/root/agent-hub` | 负责对照方案、实验验证、迁移参照 |
 
 当前 QQ 渠道绑定：`qqbot:default -> qq-main`。
 
@@ -40,8 +39,8 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents -> qq-main -> QQ Bot -
 - `channels.qqbot.enabled = true`
 - `plugins.allow = ["qqbot"]`
 - `qq-main` 已绑定 `qqbot:default`
-- `qq-main.subagents.allowAgents = ["brain-secretary-dev", "agent-hub-dev"]`
-- `tools.agentToAgent.allow = ["qq-main", "brain-secretary-dev", "agent-hub-dev"]`
+- `qq-main.subagents.allowAgents = ["brain-secretary-dev"]`
+- `tools.agentToAgent.allow = ["qq-main", "brain-secretary-dev"]`
 - `tools.sessions.visibility = "all"`
 
 ---

@@ -14,7 +14,7 @@
 - 这里已经包含主项目代码、部署文档、运维脚本和 QQ Bridge
 - `/root/.openclaw` 属于运行时配置和大脑工作区，不适合直接整体入库
 - `/root/Napcat` 属于 QQ 客户端运行环境，也不适合整体入库
-- `/root/agent-hub` 更适合后续按独立实验仓单独维护
+- 当前只维护 `/root/brain-secretary` 这一套主仓代码。
 
 ---
 

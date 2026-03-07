@@ -75,8 +75,6 @@ async def refresh_agent_status():
             project = 'qq-bot'
         elif '/brain-secretary/' in low or '\\brain-secretary\\' in low:
             project = 'brain-secretary'
-        elif '/agent-hub/' in low or '\\agent-hub\\' in low:
-            project = 'agent-hub'
 
         await update_agent_status(
             agent_id=agent_id,

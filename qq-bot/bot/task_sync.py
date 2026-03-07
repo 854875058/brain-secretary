@@ -301,7 +301,7 @@ async def sync_local_checklist_milestones(default_user_qq: int | None) -> int:
     message_item = next((item for item in coordination_item_list if item.get('item_key') == message_key), None)
     if message_item is not None:
         notes = _merge_text(message_item.get('notes'), LOCAL_MESSAGE_NOTE, limit=MAX_NOTE_LENGTH)
-        assigned_agent = str(message_item.get('assigned_agent') or 'agent-hub-dev')
+        assigned_agent = str(message_item.get('assigned_agent') or 'brain-secretary-dev')
         owner_agent = str(message_item.get('owner_agent') or 'qq-main')
         needs_update = any([
             str(message_item.get('notes') or '') != str(notes or ''),

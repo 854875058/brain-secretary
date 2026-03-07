@@ -52,7 +52,7 @@ def build_evolution_prompt(user_message: str) -> str:
         "你的目标不是只口头答应，而是尽量通过修改本地文件把改进真正固化下来，并形成可追踪的闭环。\n\n"
         "请按这个顺序判断并执行：\n"
         "1. 先判断这是记忆固化、规则更新、工程实现还是跨仓协同；不要跳过拆解\n"
-        "2. 需要改主仓工程时，优先委派 `brain-secretary-dev`；需要次仓参考/迁移时，再委派 `agent-hub-dev`\n"
+        "2. 需要改主仓工程或参考旧实现时，统一委派 `brain-secretary-dev` 在主仓内落地。\n"
         "3. 如果是长期记忆 / 用户偏好 / 经验教训 → 更新 MEMORY.md 或 memory/YYYY-MM-DD.md\n"
         "4. 如果是行为规范 / 路由 / 验收方式 / 协调规则 → 更新 AGENTS.md、SOUL.md、BRAIN.md、SUBAGENTS.md、TOOLS.md、EVOLUTION.md 等\n"
         "5. 如果是可复用流程 / 固定操作模式 → 在 workspace/skills 下创建或更新本地 skill\n"
