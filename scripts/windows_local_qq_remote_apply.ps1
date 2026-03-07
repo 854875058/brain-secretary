@@ -50,8 +50,8 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $remoteCommands = @(
-    "cd "$RemoteRepoPath"",
-    "python3 scripts/qq_bot_multi.py import-profile --profile "$RemoteProfileRelativePath" --json"
+    ('cd "{0}"' -f $RemoteRepoPath),
+    ('python3 scripts/qq_bot_multi.py import-profile --profile "{0}" --json' -f $RemoteProfileRelativePath)
 )
 if (-not $SkipRestart) {
     $remoteCommands += "python3 scripts/qq_bot_multi.py restart --json"
