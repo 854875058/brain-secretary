@@ -326,7 +326,8 @@ class OpsManager:
     def show_logs(self, target: str | None, lines: int, follow: bool) -> None:
         components = self._resolve_target(target)
         if len(components) != 1:
-            raise OpsError("logs 只支持单个组件，请使用 gateway/bridge/napcat/model_proxy")
+            valid = ", ".join(sorted(self.platform_cfg["components"].keys()))
+            raise OpsError(f"logs 只支持单个组件，请使用: {valid}")
         component = components[0]
         meta = self._component_meta(component)
         if self.platform == "linux":

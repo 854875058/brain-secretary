@@ -92,6 +92,7 @@ brain-secretary/
 - 想看 OpenClaw 多 Agent 配置 → `docs/openclaw-setup.md`
 - 想快速接手当前状态 → `HANDOVER.md`
 - 想看自动化维护规则 → `CLAUDE.md`
+- 想看 AI 自动提交约定 → `AI_AUTOCOMMIT.md`
 - 想配置 GitHub 仓库与自动提交 → `docs/github-workflow.md`
 - 想统一启停/状态/日志 → `scripts/ops_manager.py`
 - 想看部署真源 → `ops/deployment_manifest.json`
