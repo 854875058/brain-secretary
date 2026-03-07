@@ -224,7 +224,9 @@
         "py -3 scripts\\ops_manager.py status all",
         "py -3 scripts\\ops_manager.py start all",
         "py -3 scripts\\ops_manager.py restart backend",
+        "scripts\\windows_local_qq_quick_setup.bat",
         "powershell -ExecutionPolicy Bypass -File scripts\\windows_local_qq_multi.ps1 -ServerBridgeHost <server-host>",
+        "powershell -ExecutionPolicy Bypass -File scripts\\windows_local_qq_doctor.ps1 -ServerBridgeHost <server-host>",
         "python3 scripts/qq_bot_multi.py print-example"
       ],
       "components": {
@@ -242,7 +244,11 @@
       "auxiliary": {
         "local_multi_qq": {
           "mode": "Windows local QQ + NapCat, server-side bridge + OpenClaw",
+          "windows_quick_setup_bat": "scripts/windows_local_qq_quick_setup.bat",
           "windows_script": "scripts/windows_local_qq_multi.ps1",
+          "windows_doctor_ps1": "scripts/windows_local_qq_doctor.ps1",
+          "windows_doctor_bat": "scripts/windows_local_qq_doctor.bat",
+          "default_output_root": "%USERPROFILE%\\brain-secretary-local-qq",
           "server_bridge_script": "scripts/qq_bot_multi.py",
           "doc": "docs/windows-local-qq-multi.md",
           "profile_example": "ops/windows-local-qq-profile.example.json",

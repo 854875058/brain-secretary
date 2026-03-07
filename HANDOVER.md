@@ -235,7 +235,10 @@ python3 scripts/napcat_multi.py qr --json
 
 关键文件：
 
+- Windows 一键入口：`scripts/windows_local_qq_quick_setup.bat`
 - Windows 脚手架：`scripts/windows_local_qq_multi.ps1`
+- Windows 自检脚本：`scripts/windows_local_qq_doctor.ps1`
+- Windows 自检批处理：`scripts/windows_local_qq_doctor.bat`
 - 服务器桥接：`scripts/qq_bot_multi.py`
 - 详细文档：`docs/windows-local-qq-multi.md`
 - 示例 profile：`ops/windows-local-qq-profile.example.json`

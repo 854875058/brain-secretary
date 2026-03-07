@@ -175,7 +175,10 @@ python3 /root/brain-secretary/scripts/napcat_multi.py stop
 - 运维真源：`/root/brain-secretary/ops/deployment_manifest.json`
 - NapCat 多实例脚本：`/root/brain-secretary/scripts/napcat_multi.py`
 - QQ Bridge 多实例脚本：`/root/brain-secretary/scripts/qq_bot_multi.py`
+- Windows 本地一键入口：`/root/brain-secretary/scripts/windows_local_qq_quick_setup.bat`
 - Windows 本地三开脚手架：`/root/brain-secretary/scripts/windows_local_qq_multi.ps1`
+- Windows 本地自检脚本：`/root/brain-secretary/scripts/windows_local_qq_doctor.ps1`
+- Windows 本地自检批处理：`/root/brain-secretary/scripts/windows_local_qq_doctor.bat`
 - NapCat 多实例根目录：`/root/napcat-multi`
 - QQ Bridge 多实例根目录：`/root/qq-bot-multi`
 - Windows 本地三开文档：`/root/brain-secretary/docs/windows-local-qq-multi.md`

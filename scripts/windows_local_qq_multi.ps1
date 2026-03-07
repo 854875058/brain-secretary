@@ -4,7 +4,8 @@ param(
 
     [string]$LocalNapCatHost = "",
     [string]$OutputRoot = "",
-    [string]$ServerProfileFileName = "server-bridge-profile.json"
+    [string]$ServerProfileFileName = "server-bridge-profile.json",
+    [switch]$OpenOutput
 )
 
 $ErrorActionPreference = "Stop"
@@ -30,6 +31,14 @@ function Ensure-Dir([string]$PathText) {
     }
 }
 
+function Write-Utf8File([string]$PathText, [string]$Content) {
+    Set-Content -Path $PathText -Value $Content -Encoding UTF8
+}
+
+function Write-WindowsBat([string]$PathText, [string[]]$Lines) {
+    Write-Utf8File -PathText $PathText -Content (($Lines -join "`r`n") + "`r`n")
+}
+
 if (-not $OutputRoot) {
     $OutputRoot = Join-Path $env:USERPROFILE "brain-secretary-local-qq"
 }
@@ -41,6 +50,9 @@ if (-not $LocalNapCatHost) {
 if (-not $LocalNapCatHost) {
     throw "未能自动识别本机 Tailscale IPv4，请手动传入 -LocalNapCatHost。"
 }
+
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$DoctorScriptPath = Join-Path $PSScriptRoot "windows_local_qq_doctor.ps1"
 
 $instances = @(
     [ordered]@{
@@ -150,6 +162,24 @@ $serverApplyPath = Join-Path $OutputRoot "server-apply.txt"
   python3 scripts/qq_bot_multi.py status --json
 "@ | Set-Content -Path $serverApplyPath -Encoding UTF8
 
+$doctorBatPath = Join-Path $OutputRoot "run-doctor.bat"
+Write-WindowsBat -PathText $doctorBatPath -Lines @(
+    '@echo off',
+    'setlocal',
+    ('powershell -ExecutionPolicy Bypass -File "{0}" -ServerBridgeHost "{1}" -LocalNapCatHost "{2}" -OutputRoot "{3}"' -f $DoctorScriptPath, $ServerBridgeHost, $LocalNapCatHost, $OutputRoot),
+    'set "EXITCODE=%ERRORLEVEL%"',
+    'echo.',
+    'if %EXITCODE% NEQ 0 echo 检查里有告警，先看上面的输出再处理。',
+    'pause',
+    'exit /b %EXITCODE%'
+)
+
+$openOutputBatPath = Join-Path $OutputRoot "open-output.bat"
+Write-WindowsBat -PathText $openOutputBatPath -Lines @(
+    '@echo off',
+    'start "" "%~dp0"'
+)
+
 $readmePath = Join-Path $OutputRoot "README.local.md"
 @"
 # Windows 本地三开 QQ / NapCat 脚手架
@@ -163,6 +193,16 @@ $readmePath = Join-Path $OutputRoot "README.local.md"
 - `instances/review/onebot11.json`
 - `server-bridge-profile.json`
 - `server-apply.txt`
+- `run-doctor.bat`
+- `open-output.bat`
+
+## 最省事的用法
+
+1. 先双击 `open-output.bat` 打开这个目录。
+2. 把 3 份 `onebot11.json` 分别塞进 3 个本地 QQ / NapCat 实例。
+3. 登录 3 个本地 QQ 号。
+4. 配完后双击 `run-doctor.bat` 做本地自检。
+5. 把 `server-bridge-profile.json` 交给服务器侧导入。
 
 ## 本地要做的事
 
@@ -177,6 +217,7 @@ $readmePath = Join-Path $OutputRoot "README.local.md"
 
 ## 生成参数
 
+- RepoRoot: $RepoRoot
 - ServerBridgeHost: $ServerBridgeHost
 - LocalNapCatHost: $LocalNapCatHost
 - OutputRoot: $OutputRoot
@@ -191,9 +232,15 @@ $readmePath = Join-Path $OutputRoot "README.local.md"
 
 - 本地 QQ / NapCat 请优先跑在你常用的 Windows 电脑上，不要再放云服务器扫码。
 - 如果本机 Tailscale IP 变化，重新运行本脚本，再把新的 `server-bridge-profile.json` 应用到服务器。
+- `run-doctor.bat` 是你后面最好用的排障入口，先看它的输出再看别的。
 "@ | Set-Content -Path $readmePath -Encoding UTF8
 
 Write-Host "已生成 Windows 本地三开 QQ 脚手架： $OutputRoot"
 Write-Host "本机 NapCat Host: $LocalNapCatHost"
 Write-Host "服务器桥接 Host: $ServerBridgeHost"
+Write-Host "仓库根目录: $RepoRoot"
 Write-Host "下一步先看： $readmePath"
+
+if ($OpenOutput) {
+    Start-Process explorer.exe $OutputRoot | Out-Null
+}

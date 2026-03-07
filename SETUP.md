@@ -146,12 +146,21 @@ python3 scripts/napcat_multi.py stop
 
 对应脚本与文档：
 
+- Windows 一键入口：`scripts/windows_local_qq_quick_setup.bat`
 - Windows 脚手架：`scripts/windows_local_qq_multi.ps1`
+- Windows 自检脚本：`scripts/windows_local_qq_doctor.ps1`
+- Windows 自检批处理：`scripts/windows_local_qq_doctor.bat`
 - 服务器桥接脚本：`scripts/qq_bot_multi.py`
 - 详细说明：`docs/windows-local-qq-multi.md`
 - 示例 profile：`ops/windows-local-qq-profile.example.json`
 
 典型流程：
+
+```bat
+scripts\windows_local_qq_quick_setup.bat
+```
+
+或者手动执行：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/windows_local_qq_multi.ps1 `
@@ -164,6 +173,8 @@ Windows 脚本生成完 `server-bridge-profile.json` 后，在服务器执行：
 python3 scripts/qq_bot_multi.py import-profile --profile ops/windows-local-qq-profile.json --json
 python3 scripts/qq_bot_multi.py restart --json
 ```
+
+生成目录里还会带上 `run-doctor.bat`，在你把 3 个本地 NapCat 配好后，双击它就能检查本机 `3001/3002/3003` 和服务器 `8011/8012/8013`。
 
 ---
 
@@ -219,7 +230,10 @@ curl http://127.0.0.1:18789/
 - Linux 运维文档：`docs/systemd-ops.md`
 - NapCat 多实例脚本：`scripts/napcat_multi.py`
 - QQ Bridge 多实例脚本：`scripts/qq_bot_multi.py`
+- Windows 本地一键入口：`scripts/windows_local_qq_quick_setup.bat`
 - Windows 本地三开脚手架：`scripts/windows_local_qq_multi.ps1`
+- Windows 本地自检脚本：`scripts/windows_local_qq_doctor.ps1`
+- Windows 本地自检批处理：`scripts/windows_local_qq_doctor.bat`
 - NapCat 多实例根目录：`/root/napcat-multi`
 - QQ Bridge 多实例根目录：`/root/qq-bot-multi`
 - Windows 本地三开文档：`docs/windows-local-qq-multi.md`
