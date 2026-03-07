@@ -180,19 +180,37 @@ python3 scripts/qq_bot_multi.py restart --json
 
 ---
 
-## Windows / 服务器项目共享分支（推荐）
+## Windows / 服务器项目双轨分支（推荐）
 
-如果你本机 Windows 和服务器上的 OpenClaw agent 都会改同一个项目，推荐共用一个 `sync/<project>` 分支。
+如果你本机 Windows 白天自己写代码，晚上又要让服务器上的 OpenClaw agent 跑检查 / 测试 / 改进，推荐改成：
+
+- `main`：稳定分支
+- `work/<project>`：你白天、本地 AI 的日常开发分支
+- `agent/<project>`：晚上服务器 agent 的独立工作分支
+
+相关文件：
 
 - 文档：`docs/project-sync-branch-workflow.md`
-- 脚本：`scripts/project_sync.py`
+- 双轨同步脚本：`scripts/project_sync.py`
+- Windows 自动跟踪脚本：`scripts/windows_project_autosync.ps1`
+- Windows 双击入口：`scripts/windows_project_autosync.bat`
 - 示例配置：`ops/project-sync.example.json`
 
 典型命令：
 
 ```bash
-python3 scripts/project_sync.py prepare --config ops/project-sync.json --project my-app
-python3 scripts/project_sync.py sync --config ops/project-sync.json --project my-app
+python3 scripts/project_sync.py prepare-work --config ops/project-sync.json --project multimodal-retrieval
+python3 scripts/project_sync.py sync-work --config ops/project-sync.json --project multimodal-retrieval
+python3 scripts/project_sync.py prepare-agent --config ops/project-sync.json --project multimodal-retrieval
+python3 scripts/project_sync.py sync-agent --config ops/project-sync.json --project multimodal-retrieval
+python3 scripts/project_sync.py review-agent --config ops/project-sync.json --project multimodal-retrieval
+python3 scripts/project_sync.py promote-agent --config ops/project-sync.json --project multimodal-retrieval
+```
+
+Windows 如果不想手动 pull，可直接跑：
+
+```bat
+scripts\windows_project_autosync.bat multimodal-retrieval 120
 ```
 
 ## Windows 手工启动（兼容保留）
@@ -252,8 +270,10 @@ curl http://127.0.0.1:18789/
 - Windows 本地自检脚本：`scripts/windows_local_qq_doctor.ps1`
 - Windows 本地自检批处理：`scripts/windows_local_qq_doctor.bat`
 - Windows 本地远程应用脚本：`scripts/windows_local_qq_remote_apply.ps1`
-- 共享分支同步脚本：`scripts/project_sync.py`
-- 共享分支工作流文档：`docs/project-sync-branch-workflow.md`
+- 双轨分支同步脚本：`scripts/project_sync.py`
+- Windows 项目自动跟踪脚本：`scripts/windows_project_autosync.ps1`
+- Windows 项目自动跟踪批处理：`scripts/windows_project_autosync.bat`
+- 双轨分支工作流文档：`docs/project-sync-branch-workflow.md`
 - NapCat 多实例根目录：`/root/napcat-multi`
 - QQ Bridge 多实例根目录：`/root/qq-bot-multi`
 - Windows 本地三开文档：`docs/windows-local-qq-multi.md`

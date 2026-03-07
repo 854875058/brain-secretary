@@ -95,22 +95,37 @@ git push -u origin main
 
 ---
 
-## 共享分支联动（Windows 本地项目 <-> 服务器 agent）
+## 双轨分支联动（Windows 本地项目 <-> 服务器 agent）
 
-如果你本机 Windows 和服务器上的 OpenClaw agent 都会改同一个项目，最推荐的方式是维护一个共同的 `sync/<project>` 分支。
+如果你本机 Windows 白天会自己提交代码，而晚上服务器 agent 主要负责排查、测试和改进，最推荐的方式不是共用一个工作分支，而是维护三条线：
+
+- `main`：稳定
+- `work/<project>`：你白天、本地 AI 的开发分支
+- `agent/<project>`：晚上服务器 agent 的独立工作分支
 
 仓库里已经补了：
 
 - 文档：`docs/project-sync-branch-workflow.md`
-- 脚本：`scripts/project_sync.py`
+- 双轨同步脚本：`scripts/project_sync.py`
+- Windows 自动跟踪脚本：`scripts/windows_project_autosync.ps1`
+- Windows 双击入口：`scripts/windows_project_autosync.bat`
 - 示例配置：`ops/project-sync.example.json`
 
 典型流程：
 
 ```bash
-python3 scripts/project_sync.py prepare --config ops/project-sync.json --project my-app
-python3 scripts/project_sync.py sync --config ops/project-sync.json --project my-app
-python3 scripts/project_sync.py sync --config ops/project-sync.json --project my-app --commit "feat: 完成一次联动修改"
+python3 scripts/project_sync.py prepare-work --config ops/project-sync.json --project multimodal-retrieval
+python3 scripts/project_sync.py sync-work --config ops/project-sync.json --project multimodal-retrieval --commit "feat: 白天完成一轮开发"
+python3 scripts/project_sync.py prepare-agent --config ops/project-sync.json --project multimodal-retrieval
+python3 scripts/project_sync.py sync-agent --config ops/project-sync.json --project multimodal-retrieval --commit "fix: 夜间 agent 完成一轮改进"
+python3 scripts/project_sync.py review-agent --config ops/project-sync.json --project multimodal-retrieval
+python3 scripts/project_sync.py promote-agent --config ops/project-sync.json --project multimodal-retrieval
+```
+
+如果你本地不想手动 pull，可以长期运行：
+
+```bat
+scripts\windows_project_autosync.bat multimodal-retrieval 120
 ```
 
 ## AI 自动提交约定

@@ -1,4 +1,4 @@
-# Windows 本地项目 / 服务器 Agent 共享分支协作
+# Windows 本地项目 / 服务器 Agent 双轨分支协作
 
 > 文档: `docs/project-sync-branch-workflow.md`
 > 更新: 2026-03-08
@@ -7,172 +7,345 @@
 
 ## 目标
 
-当你的 **Windows 本地项目** 和 **服务器上的 OpenClaw agent** 都会改同一个仓库时，最稳的做法不是互相传压缩包，而是：
+你这个场景里，**不适合**让服务器 agent 和你白天本地开发都直接改同一个工作分支。
 
-- 同一个远端仓库
-- 同一个共享分支
-- 双方都遵守“先拉后改、改完就推”的节奏
+更稳的方式是：
 
-推荐分支命名：
+- `main`：稳定分支
+- `work/<project>`：你白天、本地 AI 的日常开发分支
+- `agent/<project>`：晚上服务器上的大脑 / 方案 / 技术 agent 的单独工作分支
 
-- `sync/<project-name>`
+推荐命名示例：
 
-例如：
-
-- `sync/ragflow-ui`
-- `sync/data-cleaner`
-- `sync/brain-secretary-local`
+- `main`
+- `work/multimodal-retrieval`
+- `agent/multimodal-retrieval`
 
 ---
 
-## 为什么我建议共享分支
+## 为什么要双轨
 
-优点：
+你的实际需求是两种完全不同的动作：
 
-- 服务器 agent 改的代码，你 Windows 本地能立刻 `pull`
-- 你本地改完再 `push`，服务器 agent 下次就能看到
-- 所有改动都有 Git 历史，冲突也可追踪
-- 最适合“人 + 本地 AI + 服务器 agent”一起改项目
+### 白天
 
-风险：
+- 你本人在 Windows 本地写代码
+- 你会自己提交 commit
+- 你希望本地代码能自动收到远端更新
 
-- 双方同时改同一文件，还是会冲突
-- 所以必须形成固定节奏：**开始前先 sync，结束后立刻 sync**
+### 晚上
+
+- 让服务器上的 agent 拉最新项目
+- 检查项目问题
+- 跑测试 / 跑命令 / 给改进建议
+- 必要时直接改代码并提交
+
+这两类动作混在同一个工作分支里，很容易互相打架。
+
+所以更稳的结构就是：
+
+- **你的代码进 `work/<project>`**
+- **agent 的改动进 `agent/<project>`**
+- **你第二天再决定要不要把 agent 的改动吸收到 `work/<project>`**
+- **确认稳定后，再从 `work/<project>` 合到 `main`**
 
 ---
 
-## 仓库里已经给你的工具
+## 现在仓库里已经给你的工具
 
-- 共享分支同步脚本：`scripts/project_sync.py`
+- 双轨同步脚本：`scripts/project_sync.py`
+- Windows 自动跟踪脚本：`scripts/windows_project_autosync.ps1`
+- Windows 双击入口：`scripts/windows_project_autosync.bat`
 - 示例配置：`ops/project-sync.example.json`
 
-它支持：
+`project_sync.py` 现在支持这些动作：
 
-- `status`：看每个项目当前分支、脏区、ahead/behind
-- `prepare`：自动切到共享分支，不存在就创建
-- `sync`：先拉、可选自动提交、再推送
+- `status`
+- `prepare-work`
+- `update-work`
+- `sync-work`
+- `prepare-agent`
+- `sync-agent`
+- `review-agent`
+- `promote-agent`
+
+兼容旧命令：
+
+- `prepare` = `prepare-work`
+- `sync` = `sync-work`
 
 ---
 
 ## 配置方法
 
-先复制一份配置：
+先复制配置：
 
 ```bash
 cp ops/project-sync.example.json ops/project-sync.json
 ```
 
-Windows 上把 `path` 改成你的本地项目路径；服务器上把 `path` 改成服务器对应仓库路径。
+然后把项目改成你的真实仓库路径。
 
-示例：
+Windows 示例：
 
 ```json
 {
   "projects": [
     {
-      "name": "my-app",
-      "path": "E:/work/my-app",
+      "name": "multimodal-retrieval",
+      "path": "E:/work/multimodal-retrieval",
       "remote": "origin",
-      "branch": "sync/my-app",
+      "stable_branch": "main",
+      "work_branch": "work/multimodal-retrieval",
+      "agent_branch": "agent/multimodal-retrieval",
       "pull_rebase": true
     }
   ]
 }
 ```
 
-服务器可以是：
+服务器示例：
 
 ```json
 {
   "projects": [
     {
-      "name": "my-app",
-      "path": "/root/projects/my-app",
+      "name": "multimodal-retrieval",
+      "path": "/root/projects/multimodal-retrieval",
       "remote": "origin",
-      "branch": "sync/my-app",
+      "stable_branch": "main",
+      "work_branch": "work/multimodal-retrieval",
+      "agent_branch": "agent/multimodal-retrieval",
       "pull_rebase": true
     }
   ]
 }
 ```
 
-关键点是：
+关键点：
 
-- `name` 一样不一样都行，**最重要的是 branch 一样**
 - Windows 和服务器都指向同一个远端仓库
-- Windows 和服务器都跑 `sync/my-app`
+- Windows 和服务器都认识同一组分支名
+- 你白天只动 `work/<project>`
+- agent 晚上只动 `agent/<project>`
 
 ---
 
-## 推荐操作节奏
+## 白天怎么做
 
-### Windows 本地开始工作前
+### 第一次准备你的工作分支
 
 ```bash
-python3 scripts/project_sync.py sync --config ops/project-sync.json --project my-app
+python3 scripts/project_sync.py prepare-work --config ops/project-sync.json --project multimodal-retrieval
 ```
 
-### Windows 本地改完后
+### 平时本地开发
+
+你一直在 `work/multimodal-retrieval` 上写代码。
+
+改完后同步：
 
 ```bash
-python3 scripts/project_sync.py sync \
+python3 scripts/project_sync.py sync-work \
   --config ops/project-sync.json \
-  --project my-app \
-  --commit "feat: 本地完成 XX 修改"
+  --project multimodal-retrieval \
+  --commit "feat: 白天完成一轮本地开发"
 ```
 
-### 服务器 agent 开工前
+---
 
-先同步：
+## 白天不想手动拉怎么办
 
-```bash
-python3 scripts/project_sync.py sync --config ops/project-sync.json --project my-app
+这个就是你刚才说的重点：**不应该每次都手动 pull。**
+
+Windows 本地可以直接跑自动跟踪：
+
+```bat
+scripts\windows_project_autosync.bat multimodal-retrieval 120
 ```
 
-### 服务器 agent 改完后
+或者：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/windows_project_autosync.ps1 `
+  -Project multimodal-retrieval `
+  -IntervalSeconds 120
+```
+
+它底层会执行：
 
 ```bash
-python3 scripts/project_sync.py sync \
+python3 scripts/project_sync.py update-work --config ops/project-sync.json --project multimodal-retrieval
+```
+
+行为是：
+
+- 如果当前就在 `work/<project>` 且工作区干净：自动拉最新远端改动
+- 如果当前就在 `work/<project>` 但你还有未提交改动：**跳过，不覆盖你的现场**
+- 如果你当前在别的分支且工作区不干净：会直接报错，防止误切分支
+
+所以这已经比“自己手动 pull”聪明很多了。
+
+---
+
+## 晚上 agent 怎么做
+
+### 1) 先准备 agent 分支
+
+在服务器项目仓库里：
+
+```bash
+python3 scripts/project_sync.py prepare-agent --config ops/project-sync.json --project multimodal-retrieval
+```
+
+这个动作会做几件事：
+
+- 先同步 `work/multimodal-retrieval`
+- 再切到 `agent/multimodal-retrieval`
+- 如果 agent 分支不存在，就从 work 分支创建
+- 如果 agent 分支存在，就拉远端并把最新 work 分支并进来
+
+### 2) 让 agent 干活
+
+接下来你的大脑 / 技术 / 方案 agent 就在 `agent/multimodal-retrieval` 里跑：
+
+- 查问题
+- 跑测试
+- 跑脚本
+- 做改进
+- 写 commit
+
+### 3) agent 改完后同步
+
+```bash
+python3 scripts/project_sync.py sync-agent \
   --config ops/project-sync.json \
-  --project my-app \
-  --commit "fix: 服务器 agent 修复 XX 问题"
+  --project multimodal-retrieval \
+  --commit "fix: 夜间 agent 修复一轮多模态检索问题"
 ```
+
+这一步只会推到：
+
+- `agent/multimodal-retrieval`
+
+不会碰你的 `work/multimodal-retrieval`。
 
 ---
 
-## 第一次准备
+## 第二天怎么看 agent 改了什么
 
-如果共享分支还没建好，先执行：
+直接执行：
 
 ```bash
-python3 scripts/project_sync.py prepare --config ops/project-sync.json --project my-app
+python3 scripts/project_sync.py review-agent --config ops/project-sync.json --project multimodal-retrieval
+python3 scripts/project_sync.py promote-agent --config ops/project-sync.json --project multimodal-retrieval
 ```
 
-再看状态：
+它会给你：
+
+- `agent` 相对 `work` 的独有 commits
+- `work` 相对 `agent` 的独有 commits
+- diff stat
+
+你也可以直接在 GitHub 上看：
+
+- `work/multimodal-retrieval...agent/multimodal-retrieval`
+
+---
+
+## 第二天怎么吸收 agent 的成果
+
+最推荐：**你先 review，再手动决定怎么合并**。
+
+如果你确认 agent 分支这轮改动没问题，可以直接用一条命令把它合回 `work/<project>`：
 
 ```bash
-python3 scripts/project_sync.py status --config ops/project-sync.json --project my-app
+python3 scripts/project_sync.py promote-agent \
+  --config ops/project-sync.json \
+  --project multimodal-retrieval
+```
+
+如果 `work/<project>` 在 review 后你又继续写了新代码，`promote-agent` 也可能像普通 Git merge 一样产生冲突；这时按正常冲突解决流程处理即可。
+
+如果你想自己手工合并，也可以：
+
+```bash
+git checkout work/multimodal-retrieval
+git merge --no-ff agent/multimodal-retrieval
+```
+
+然后再同步：
+
+```bash
+python3 scripts/project_sync.py sync-work \
+  --config ops/project-sync.json \
+  --project multimodal-retrieval \
+  --commit "merge: 吸收夜间 agent 的改进结果"
+```
+
+最后等这一阶段稳定，再把：
+
+- `work/multimodal-retrieval -> main`
+
+---
+
+## 推荐节奏
+
+### 白天开始工作前
+
+```bash
+python3 scripts/project_sync.py prepare-work --config ops/project-sync.json --project multimodal-retrieval
+```
+
+### 白天开发过程中
+
+- 自动跟踪脚本一直跑
+- 你自己正常写代码、commit
+
+### 白天下班前
+
+```bash
+python3 scripts/project_sync.py sync-work \
+  --config ops/project-sync.json \
+  --project multimodal-retrieval \
+  --commit "feat: 白天收工前同步工作分支"
+```
+
+### 晚上 agent 开工前
+
+```bash
+python3 scripts/project_sync.py prepare-agent --config ops/project-sync.json --project multimodal-retrieval
+```
+
+### 晚上 agent 收工后
+
+```bash
+python3 scripts/project_sync.py sync-agent \
+  --config ops/project-sync.json \
+  --project multimodal-retrieval \
+  --commit "fix: 夜间 agent 完成一轮排查与改进"
+```
+
+### 第二天早上 review
+
+```bash
+python3 scripts/project_sync.py review-agent --config ops/project-sync.json --project multimodal-retrieval
 ```
 
 ---
 
-## 我对你这套协作方式的建议
+## 你这套模式的本质
 
-最推荐的模式是：
+一句话概括：
 
-- `main`：稳定分支
-- `sync/<project>`：你、本地 AI、服务器 agent 的协同工作分支
-- 稳定后再把 `sync/<project>` 合回 `main`
+- `main` = 稳定线
+- `work/<project>` = 你白天的正式开发线
+- `agent/<project>` = 晚上 agent 的独立试验 / 巡检 / 改进线
 
-这样做比所有人都直接改 `main` 稳得多。
+这样你就不会再遇到：
 
----
+- 白天本地代码和晚上服务器代码互相覆盖
+- agent 直接改坏你的工作分支
+- 第二天一上班还得自己手动猜哪里该 pull
 
-## 和 OpenClaw 的关系
-
-如果服务器上的 OpenClaw agent workspace 指向这个项目仓库，那么：
-
-- 它 `sync` 完之后看到的是最新代码
-- 它提交/推送之后，你本地 `sync` 就能拿到
-
-所以你原来想的“维护一个共同 Git 分支”，**我觉得是对的，而且是当前最靠谱的方案**。
+这就是最适合你当前模式的结构。

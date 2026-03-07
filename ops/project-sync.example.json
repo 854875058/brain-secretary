@@ -1,10 +1,12 @@
 {
   "projects": [
     {
-      "name": "my-app",
-      "path": "/root/projects/my-app",
+      "name": "multimodal-retrieval",
+      "path": "/root/projects/multimodal-retrieval",
       "remote": "origin",
-      "branch": "sync/my-app",
+      "stable_branch": "main",
+      "work_branch": "work/multimodal-retrieval",
+      "agent_branch": "agent/multimodal-retrieval",
       "pull_rebase": true
     }
   ]

@@ -181,8 +181,10 @@ python3 /root/brain-secretary/scripts/napcat_multi.py stop
 - Windows 本地自检批处理：`/root/brain-secretary/scripts/windows_local_qq_doctor.bat`
 - Windows 本地远程应用脚本：`/root/brain-secretary/scripts/windows_local_qq_remote_apply.ps1`
 - 桥接记忆中心脚本：`/root/brain-secretary/scripts/memory_center.py`
-- 共享分支同步脚本：`/root/brain-secretary/scripts/project_sync.py`
-- 共享分支工作流文档：`/root/brain-secretary/docs/project-sync-branch-workflow.md`
+- 双轨分支同步脚本：`/root/brain-secretary/scripts/project_sync.py`
+- Windows 项目自动跟踪脚本：`/root/brain-secretary/scripts/windows_project_autosync.ps1`
+- Windows 项目自动跟踪批处理：`/root/brain-secretary/scripts/windows_project_autosync.bat`
+- 双轨分支工作流文档：`/root/brain-secretary/docs/project-sync-branch-workflow.md`
 - NapCat 多实例根目录：`/root/napcat-multi`
 - QQ Bridge 多实例根目录：`/root/qq-bot-multi`
 - Windows 本地三开文档：`/root/brain-secretary/docs/windows-local-qq-multi.md`

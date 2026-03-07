@@ -90,7 +90,7 @@ brain-secretary/
 - 想看当前运维方式 → `docs/systemd-ops.md`
 - 想看 OpenClaw 多 Agent 配置 → `docs/openclaw-setup.md`
 - 想看 Windows 本地三开 QQ 对接 → `docs/windows-local-qq-multi.md`
-- 想让 Windows 本地项目和服务器 agent 共用分支 → `docs/project-sync-branch-workflow.md`
+- 想看 Windows / 服务器项目双轨分支协作 → `docs/project-sync-branch-workflow.md`
 - 想在 Windows 双击一键生成配置 → `scripts/windows_local_qq_quick_setup.bat`
 - 想在 Windows 本地做自检 → `scripts/windows_local_qq_doctor.bat`
 - 想手工查看桥接层记忆 → `scripts/memory_center.py`

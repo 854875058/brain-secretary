@@ -230,7 +230,11 @@
         "powershell -ExecutionPolicy Bypass -File scripts\\windows_local_qq_doctor.ps1 -ServerBridgeHost <server-host>",
         "python3 scripts/qq_bot_multi.py print-example",
         "powershell -ExecutionPolicy Bypass -File scripts\\windows_local_qq_remote_apply.ps1 -ServerSshTarget <root@server>",
-        "python3 scripts/project_sync.py sync --config ops/project-sync.json --project my-app"
+        "python3 scripts/project_sync.py sync --config ops/project-sync.json --project my-app",
+        "python3 scripts/project_sync.py prepare-work --config ops/project-sync.json --project multimodal-retrieval",
+        "python3 scripts/project_sync.py prepare-agent --config ops/project-sync.json --project multimodal-retrieval",
+        "python3 scripts/project_sync.py promote-agent --config ops/project-sync.json --project multimodal-retrieval",
+        "powershell -ExecutionPolicy Bypass -File scripts\\windows_project_autosync.ps1 -Project multimodal-retrieval -IntervalSeconds 120"
       ],
       "components": {
         "gateway": {
@@ -273,7 +277,9 @@
           "windows_remote_apply_ps1": "scripts/windows_local_qq_remote_apply.ps1",
           "memory_center_script": "scripts/memory_center.py",
           "project_sync_script": "scripts/project_sync.py",
-          "project_sync_doc": "docs/project-sync-branch-workflow.md"
+          "project_sync_doc": "docs/project-sync-branch-workflow.md",
+          "project_autosync_ps1": "scripts/windows_project_autosync.ps1",
+          "project_autosync_bat": "scripts/windows_project_autosync.bat"
         }
       }
     }
