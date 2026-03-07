@@ -20,7 +20,12 @@
    - `/logs` - 查看最近日志
    - `/help` - 显示帮助信息
 
-3. **定时推送**
+3. **闭环增强**
+   - `/remember` / `/evolve` 会落到桥接层长期记忆
+   - 自动把已固化记忆注入后续 prompt
+   - `watchdog` 定时检查 OpenClaw / 端口 / NapCat
+
+4. **定时推送**
    - 每天 9:00 推送爬虫统计
 
 ## 部署步骤
@@ -72,6 +77,9 @@ python main.py
 - 私聊 bot："你好"
 - 群聊 @bot："介绍一下你自己"
 - 发送指令："/help"
+- 查看记忆：`/memories`
+- 搜索记忆：`/memory-search 关键词`
+- 查看 watchdog：`/watchdog`
 
 ## 目录结构
 

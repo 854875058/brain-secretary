@@ -41,6 +41,7 @@ qq-bot/data/**
 *.db-wal
 *.sqlite
 *.sqlite3
+memory/qq-memory-ledger.jsonl
 
 # Temporary verification files
 tmp_*.py

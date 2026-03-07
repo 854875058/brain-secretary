@@ -4,7 +4,6 @@ import base64
 import json
 import mimetypes
 import os
-import platform
 import shutil
 import subprocess
 import tempfile
@@ -255,20 +254,19 @@ def _tesseract_ocr(path: Path | None) -> str | None:
 
 
 async def _napcat_ocr(qq_sender: QQSender, saved_path: Path | None, source_url: str) -> str | None:
-    if saved_path is None or not saved_path.exists():
-        return None
-    if platform.system().lower() != 'windows':
+    if (saved_path is None or not saved_path.exists()) and not source_url:
         return None
 
     candidates: list[str] = []
     if source_url:
         candidates.append(source_url)
 
-    resolved_path = saved_path.resolve()
-    candidates.extend([
-        resolved_path.as_uri(),
-        str(resolved_path),
-    ])
+    if saved_path is not None and saved_path.exists():
+        resolved_path = saved_path.resolve()
+        candidates.extend([
+            resolved_path.as_uri(),
+            str(resolved_path),
+        ])
 
     seen: set[str] = set()
     for candidate in candidates:

@@ -73,6 +73,8 @@ scripts\windows_local_qq_doctor.bat
 
 或者直接双击输出目录里的 `run-doctor.bat` 做自检。
 
+如果你本机能 SSH 到服务器，后面还可以直接双击输出目录里的 `apply-remote.bat` 自动上传并应用。
+
 ### 1) 克隆仓库
 
 ```powershell
@@ -104,6 +106,7 @@ powershell -ExecutionPolicy Bypass -File scripts/windows_local_qq_multi.ps1 `
 - `~/brain-secretary-local-qq/README.local.md`
 - `~/brain-secretary-local-qq/run-doctor.bat`
 - `~/brain-secretary-local-qq/open-output.bat`
+- `~/brain-secretary-local-qq/apply-remote.bat`
 
 ### 3) 把 3 份 `onebot11.json` 放进本地 3 个 NapCat 实例
 
@@ -140,6 +143,16 @@ powershell -ExecutionPolicy Bypass -File scripts/windows_local_qq_doctor.ps1 `
 
 ## 服务器侧步骤
 
+### 0) 如果你本机能 SSH 到服务器
+
+可以直接运行：
+
+```bat
+apply-remote.bat
+```
+
+它会调用仓库里的 `scripts/windows_local_qq_remote_apply.ps1`，自动上传 `server-bridge-profile.json` 并在服务器执行导入 / 重启 / 状态检查。
+
 ### 1) 把 Windows 生成的 `server-bridge-profile.json` 复制到服务器仓库
 
 建议放到：
@@ -168,6 +181,7 @@ python3 scripts/qq_bot_multi.py status --json
 - Windows 脚手架：`scripts/windows_local_qq_multi.ps1`
 - Windows 自检脚本：`scripts/windows_local_qq_doctor.ps1`
 - Windows 自检批处理：`scripts/windows_local_qq_doctor.bat`
+- Windows 远程应用脚本：`scripts/windows_local_qq_remote_apply.ps1`
 - 服务器多桥接：`scripts/qq_bot_multi.py`
 
 `qq_bot_multi.py` 现在支持：

@@ -7,7 +7,8 @@
       "handover": "HANDOVER.md",
       "setup": "SETUP.md",
       "systemd_ops": "docs/systemd-ops.md",
-      "claude_rules": "CLAUDE.md"
+      "claude_rules": "CLAUDE.md",
+      "project_sync": "docs/project-sync-branch-workflow.md"
     }
   },
   "models": {
@@ -227,7 +228,9 @@
         "scripts\\windows_local_qq_quick_setup.bat",
         "powershell -ExecutionPolicy Bypass -File scripts\\windows_local_qq_multi.ps1 -ServerBridgeHost <server-host>",
         "powershell -ExecutionPolicy Bypass -File scripts\\windows_local_qq_doctor.ps1 -ServerBridgeHost <server-host>",
-        "python3 scripts/qq_bot_multi.py print-example"
+        "python3 scripts/qq_bot_multi.py print-example",
+        "powershell -ExecutionPolicy Bypass -File scripts\\windows_local_qq_remote_apply.ps1 -ServerSshTarget <root@server>",
+        "python3 scripts/project_sync.py sync --config ops/project-sync.json --project my-app"
       ],
       "components": {
         "gateway": {
@@ -266,7 +269,11 @@
             "brain": "qq-main",
             "tech": "brain-secretary-dev",
             "review": "brain-secretary-review"
-          }
+          },
+          "windows_remote_apply_ps1": "scripts/windows_local_qq_remote_apply.ps1",
+          "memory_center_script": "scripts/memory_center.py",
+          "project_sync_script": "scripts/project_sync.py",
+          "project_sync_doc": "docs/project-sync-branch-workflow.md"
         }
       }
     }

@@ -1,0 +1,11 @@
+{
+  "projects": [
+    {
+      "name": "my-app",
+      "path": "/root/projects/my-app",
+      "remote": "origin",
+      "branch": "sync/my-app",
+      "pull_rebase": true
+    }
+  ]
+}

@@ -30,6 +30,9 @@ ALLOWED_COMMANDS = {
     '/disk': '查看磁盘使用',
     '/patrol': '执行运维巡检',
     '/logs': '查看最近桥接日志',
+    '/memories': '查看最近固化记忆',
+    '/memory-search 关键词': '搜索桥接层记忆',
+    '/watchdog': '查看闭环告警状态',
 }
 
 

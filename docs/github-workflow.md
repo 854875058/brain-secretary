@@ -95,6 +95,24 @@ git push -u origin main
 
 ---
 
+## 共享分支联动（Windows 本地项目 <-> 服务器 agent）
+
+如果你本机 Windows 和服务器上的 OpenClaw agent 都会改同一个项目，最推荐的方式是维护一个共同的 `sync/<project>` 分支。
+
+仓库里已经补了：
+
+- 文档：`docs/project-sync-branch-workflow.md`
+- 脚本：`scripts/project_sync.py`
+- 示例配置：`ops/project-sync.example.json`
+
+典型流程：
+
+```bash
+python3 scripts/project_sync.py prepare --config ops/project-sync.json --project my-app
+python3 scripts/project_sync.py sync --config ops/project-sync.json --project my-app
+python3 scripts/project_sync.py sync --config ops/project-sync.json --project my-app --commit "feat: 完成一次联动修改"
+```
+
 ## AI 自动提交约定
 
 提交说明建议统一使用中文，直接说明“这次提交改了什么”，推荐格式：`类型: 中文概述本次修改内容`。

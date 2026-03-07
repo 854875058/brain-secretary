@@ -150,6 +150,7 @@ python3 scripts/napcat_multi.py stop
 - Windows 脚手架：`scripts/windows_local_qq_multi.ps1`
 - Windows 自检脚本：`scripts/windows_local_qq_doctor.ps1`
 - Windows 自检批处理：`scripts/windows_local_qq_doctor.bat`
+- Windows 远程应用脚本：`scripts/windows_local_qq_remote_apply.ps1`
 - 服务器桥接脚本：`scripts/qq_bot_multi.py`
 - 详细说明：`docs/windows-local-qq-multi.md`
 - 示例 profile：`ops/windows-local-qq-profile.example.json`
@@ -175,8 +176,24 @@ python3 scripts/qq_bot_multi.py restart --json
 ```
 
 生成目录里还会带上 `run-doctor.bat`，在你把 3 个本地 NapCat 配好后，双击它就能检查本机 `3001/3002/3003` 和服务器 `8011/8012/8013`。
+如果你本机能 SSH 到服务器，双击输出目录里的 `apply-remote.bat` 就能自动上传 `profile` 并在服务器执行导入 / 重启 / 状态检查。
 
 ---
+
+## Windows / 服务器项目共享分支（推荐）
+
+如果你本机 Windows 和服务器上的 OpenClaw agent 都会改同一个项目，推荐共用一个 `sync/<project>` 分支。
+
+- 文档：`docs/project-sync-branch-workflow.md`
+- 脚本：`scripts/project_sync.py`
+- 示例配置：`ops/project-sync.example.json`
+
+典型命令：
+
+```bash
+python3 scripts/project_sync.py prepare --config ops/project-sync.json --project my-app
+python3 scripts/project_sync.py sync --config ops/project-sync.json --project my-app
+```
 
 ## Windows 手工启动（兼容保留）
 
@@ -234,6 +251,9 @@ curl http://127.0.0.1:18789/
 - Windows 本地三开脚手架：`scripts/windows_local_qq_multi.ps1`
 - Windows 本地自检脚本：`scripts/windows_local_qq_doctor.ps1`
 - Windows 本地自检批处理：`scripts/windows_local_qq_doctor.bat`
+- Windows 本地远程应用脚本：`scripts/windows_local_qq_remote_apply.ps1`
+- 共享分支同步脚本：`scripts/project_sync.py`
+- 共享分支工作流文档：`docs/project-sync-branch-workflow.md`
 - NapCat 多实例根目录：`/root/napcat-multi`
 - QQ Bridge 多实例根目录：`/root/qq-bot-multi`
 - Windows 本地三开文档：`docs/windows-local-qq-multi.md`

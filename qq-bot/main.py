@@ -24,6 +24,7 @@ from bot.task_db import (
 )
 from bot.agent_manager import dispatch_task
 from bot.workspace import init_workspace_db, add_knowledge, search_knowledge, list_knowledge, get_knowledge, post_bulletin, get_unread_bulletins
+from bot.memory_center import build_memory_context, remember_text, render_recent_entries, render_search_results
 from bot.monitor import get_status_report, refresh_agent_status
 from bot.chat_history import build_chat_history_payload, render_chat_history_page
 from bot.media_context import build_user_message_with_media_context, extract_plain_text
@@ -35,6 +36,7 @@ from bot.evolution_loop import (
     update_evolution_request_from_sync_reply,
 )
 from bot.tts_service import TTSService, TTSServiceError
+from bot.watchdog import build_watchdog_report
 from bot.runtime_paths import (
     BOT_LOG_PATH,
     CONFIG_PATH,
@@ -168,7 +170,7 @@ async def startup():
     await init_db()
     await init_workspace_db()
     await auto_register_projects()
-    setup_scheduled_tasks(qq, ADMIN_QQ, OPENCLAW_TRANSCRIPT_DIR)
+    setup_scheduled_tasks(qq, ADMIN_QQ, OPENCLAW_TRANSCRIPT_DIR, agent_id=openclaw.agent_id)
     projects = await get_all_projects()
     logger.info(f"管理员 QQ: {ADMIN_QQ}")
     logger.info(f"已注册 {len(projects)} 个项目")
@@ -295,6 +297,19 @@ async def handle_bot_command(cmd: str, user_id: int, reply_func):
             tags = f" [{d['tags']}]" if d['tags'] else ""
             text += f"  #{d['id']} {d['title']}{tags}\n"
         await reply_func(text.strip())
+
+    elif cmd == "/memories":
+        await reply_func(render_recent_entries(limit=8))
+
+    elif cmd.startswith("/memory-search "):
+        keyword = cmd[len("/memory-search "):].strip()
+        if not keyword:
+            await reply_func("用法: /memory-search 关键词")
+            return
+        await reply_func(render_search_results(keyword, limit=8))
+
+    elif cmd == "/watchdog":
+        await reply_func(await build_watchdog_report(qq))
 
     elif cmd.startswith("/search "):
         keyword = cmd[8:].strip()
@@ -705,9 +720,32 @@ async def run_ai_turn(
             )
             await reply_func(build_evolution_ack_text(evolution_state))
 
+    if evolution_mode:
+        try:
+            remembered = remember_text(
+                evolution_user_message,
+                kind=evolution_kind or 'evolve',
+                source='qq_evolution',
+                user_qq=user_id,
+                group_id=group_id,
+                chat_type=chat_type,
+                agent_id=openclaw.agent_id,
+            )
+            logger.info(
+                '桥接层记忆已固化: duplicate=%s topic=%s summary=%s',
+                remembered.get('duplicate'),
+                remembered.get('topic_path'),
+                remembered.get('summary'),
+            )
+        except Exception as exc:
+            logger.warning('桥接层记忆固化失败: %s', exc)
+
     effective_prompt = prompt
+    memory_context = build_memory_context(evolution_user_message or prompt, limit=6)
+    if memory_context:
+        effective_prompt = memory_context + "\n\n" + effective_prompt
     if OPENCLAW_PROMPT_PREFIX:
-        effective_prompt = OPENCLAW_PROMPT_PREFIX + "\n\n" + prompt
+        effective_prompt = OPENCLAW_PROMPT_PREFIX + "\n\n" + effective_prompt
 
     if evolution_mode and not OPENCLAW_ENABLED:
         reply: OpenClawTurnResult | str = '当前未启用 OpenClaw，自助进化/记忆固化无法真正落地到本地文件。'

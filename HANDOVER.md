@@ -239,8 +239,17 @@ python3 scripts/napcat_multi.py qr --json
 - Windows 脚手架：`scripts/windows_local_qq_multi.ps1`
 - Windows 自检脚本：`scripts/windows_local_qq_doctor.ps1`
 - Windows 自检批处理：`scripts/windows_local_qq_doctor.bat`
+- Windows 远程应用脚本：`scripts/windows_local_qq_remote_apply.ps1`
 - 服务器桥接：`scripts/qq_bot_multi.py`
 - 详细文档：`docs/windows-local-qq-multi.md`
 - 示例 profile：`ops/windows-local-qq-profile.example.json`
 
-服务器使用 `python3 scripts/qq_bot_multi.py import-profile --profile ...` 导入本地生成的 profile 即可。
+服务器使用 `python3 scripts/qq_bot_multi.py import-profile --profile ...` 导入本地生成的 profile 即可；如果 Windows 本机能 SSH 到服务器，也可以直接跑 `scripts/windows_local_qq_remote_apply.ps1`。
+
+## 项目共享分支联动
+
+如果 Windows 本地项目和服务器上的 OpenClaw agent 同时改一个仓库，推荐统一使用共享分支：
+
+- 文档：`docs/project-sync-branch-workflow.md`
+- 脚本：`scripts/project_sync.py`
+- 示例配置：`ops/project-sync.example.json`

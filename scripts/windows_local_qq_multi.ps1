@@ -53,6 +53,7 @@ if (-not $LocalNapCatHost) {
 
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $DoctorScriptPath = Join-Path $PSScriptRoot "windows_local_qq_doctor.ps1"
+$RemoteApplyScriptPath = Join-Path $PSScriptRoot "windows_local_qq_remote_apply.ps1"
 
 $instances = @(
     [ordered]@{
@@ -180,6 +181,18 @@ Write-WindowsBat -PathText $openOutputBatPath -Lines @(
     'start "" "%~dp0"'
 )
 
+$remoteApplyBatPath = Join-Path $OutputRoot "apply-remote.bat"
+Write-WindowsBat -PathText $remoteApplyBatPath -Lines @(
+    '@echo off',
+    'setlocal',
+    ('powershell -ExecutionPolicy Bypass -File "{0}" -OutputRoot "{1}" -LocalProfilePath "{2}"' -f $RemoteApplyScriptPath, $OutputRoot, $serverProfilePath),
+    'set "EXITCODE=%ERRORLEVEL%"',
+    'echo.',
+    'if %EXITCODE% NEQ 0 echo 远程应用失败，请先看上面的报错。',
+    'pause',
+    'exit /b %EXITCODE%'
+)
+
 $readmePath = Join-Path $OutputRoot "README.local.md"
 @"
 # Windows 本地三开 QQ / NapCat 脚手架
@@ -195,6 +208,7 @@ $readmePath = Join-Path $OutputRoot "README.local.md"
 - `server-apply.txt`
 - `run-doctor.bat`
 - `open-output.bat`
+- `apply-remote.bat`
 
 ## 最省事的用法
 
@@ -202,7 +216,8 @@ $readmePath = Join-Path $OutputRoot "README.local.md"
 2. 把 3 份 `onebot11.json` 分别塞进 3 个本地 QQ / NapCat 实例。
 3. 登录 3 个本地 QQ 号。
 4. 配完后双击 `run-doctor.bat` 做本地自检。
-5. 把 `server-bridge-profile.json` 交给服务器侧导入。
+5. 如果你本机能直接 SSH 到服务器，双击 `apply-remote.bat` 自动上传并应用。
+6. 如果不用自动应用，再手动把 `server-bridge-profile.json` 交给服务器侧导入。
 
 ## 本地要做的事
 
@@ -233,6 +248,7 @@ $readmePath = Join-Path $OutputRoot "README.local.md"
 - 本地 QQ / NapCat 请优先跑在你常用的 Windows 电脑上，不要再放云服务器扫码。
 - 如果本机 Tailscale IP 变化，重新运行本脚本，再把新的 `server-bridge-profile.json` 应用到服务器。
 - `run-doctor.bat` 是你后面最好用的排障入口，先看它的输出再看别的。
+- `apply-remote.bat` 会调用仓库里的 `windows_local_qq_remote_apply.ps1`，适合你本机能 SSH 服务器的场景。
 "@ | Set-Content -Path $readmePath -Encoding UTF8
 
 Write-Host "已生成 Windows 本地三开 QQ 脚手架： $OutputRoot"

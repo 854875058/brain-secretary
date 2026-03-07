@@ -172,6 +172,7 @@ NapCat(instance) -> QQ Bridge(instance) -> OpenClaw(target agent)
 - 懒人模式直接双击 `scripts/windows_local_qq_quick_setup.bat`
 - 手动模式用 `scripts/windows_local_qq_multi.ps1` 生成本地配置
 - 本地自检优先跑 `scripts/windows_local_qq_doctor.ps1` 或 `scripts/windows_local_qq_doctor.bat`
+- 如果本机能 SSH 服务器，可用 `scripts/windows_local_qq_remote_apply.ps1` 自动上传并应用 profile
 - 用 `python3 scripts/qq_bot_multi.py import-profile --profile ...` 把本地 profile 导入服务器
 
 详细说明见：`docs/windows-local-qq-multi.md`

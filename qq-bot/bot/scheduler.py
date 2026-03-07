@@ -5,13 +5,14 @@ from bot.task_db import get_recent_tasks
 from bot.async_notifier import deliver_async_internal_updates
 from bot.task_sync import sync_local_checklist_milestones, sync_task_checklist_from_transcripts
 from bot.runtime_paths import BOT_LOG_PATH
+from bot.watchdog import run_watchdog_pass
 
 logger = logging.getLogger(__name__)
 
 scheduler = AsyncIOScheduler()
 
 
-def setup_scheduled_tasks(qq_sender, target_qq: int, transcript_dir: str | None = None):
+def setup_scheduled_tasks(qq_sender, target_qq: int, transcript_dir: str | None = None, agent_id: str | None = None):
     """配置定时任务"""
 
     # 每天 9:00 推送日报
@@ -51,6 +52,16 @@ def setup_scheduled_tasks(qq_sender, target_qq: int, transcript_dir: str | None 
                 logger.info(f"异步完成回推已发送 {delivered} 条")
         except Exception as e:
             logger.error(f"异步完成回推失败: {e}", exc_info=True)
+
+    if str(agent_id or "").strip() in {"", "qq-main"}:
+        @scheduler.scheduled_job("interval", seconds=90)
+        async def watchdog_check():
+            try:
+                snapshot = await run_watchdog_pass(qq_sender, target_qq)
+                if not snapshot.get('healthy', True):
+                    logger.warning('Watchdog 当前存在异常项')
+            except Exception as e:
+                logger.error(f"Watchdog 执行失败: {e}", exc_info=True)
 
     # 每 30 秒把子 Agent 完成情况同步到任务清单
     @scheduler.scheduled_job("interval", seconds=30)
