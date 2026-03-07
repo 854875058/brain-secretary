@@ -78,10 +78,11 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents -> qq-main -> QQ Bot -
 
 说明：
 
-- QQ 入口继续统一打到 `qq-main`
-- 多 agent 协作在 OpenClaw 内部完成
-- 旧 `qq-bot(FastAPI Bridge)` 与 `NapCat` 现网服务已停用
-- 仓库里的 `qq-bot/` 仅保留为历史实现参考，不再承担现网入口职责
+- OpenClaw 原生主入口继续统一打到 `qq-main`
+- 多 agent 协作仍以 OpenClaw 内部委派为主
+- 另外新增 3 个辅助扫码 QQ 入口：`brain / tech / review`
+- 这 3 个辅助入口通过 `NapCat(instance) -> QQ Bridge(instance) -> OpenClaw(target agent)` 接入
+- 仓库里的 `qq-bot/` 仍不是现网主入口，但现在承担辅助扫码 QQ 层
 
 ---
 
@@ -190,4 +191,33 @@ python3 scripts/napcat_multi.py bootstrap --refresh-workdir
 python3 scripts/napcat_multi.py status --json
 python3 scripts/napcat_multi.py qr --json
 python3 scripts/napcat_multi.py stop
+```
+
+
+---
+
+## QQ Bridge 多实例（辅助扫码入口）
+
+新增脚本：
+
+- `scripts/napcat_multi.py`
+- `scripts/qq_bot_multi.py`
+
+新增根目录：
+
+- `/root/napcat-multi`
+- `/root/qq-bot-multi`
+
+默认映射：
+
+- `brain`：大脑号 -> `qq-main`
+- `tech`：技术号 -> `brain-secretary-dev`
+- `review`：方案验收号 -> `brain-secretary-review`
+
+常用命令：
+
+```bash
+python3 scripts/qq_bot_multi.py bootstrap --json
+python3 scripts/qq_bot_multi.py status --json
+python3 scripts/napcat_multi.py qr --json
 ```

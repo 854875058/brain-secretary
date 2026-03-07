@@ -141,3 +141,23 @@ python3 /root/brain-secretary/scripts/napcat_multi.py bootstrap --refresh-workdi
 python3 /root/brain-secretary/scripts/napcat_multi.py status --json
 python3 /root/brain-secretary/scripts/napcat_multi.py qr --json
 ```
+
+
+## 辅助扫码 QQ 入口
+
+除 OpenClaw 原生 `qqbot/default` 主入口外，还补了一层辅助扫码 QQ 入口：
+
+```text
+NapCat(instance) -> QQ Bridge(instance) -> OpenClaw(target agent)
+```
+
+默认映射：
+
+- `brain` -> `qq-main`
+- `tech` -> `brain-secretary-dev`
+- `review` -> `brain-secretary-review`
+
+相关脚本：
+
+- `scripts/napcat_multi.py`
+- `scripts/qq_bot_multi.py`

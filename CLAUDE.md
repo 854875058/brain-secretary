@@ -30,10 +30,11 @@
 
 ### 当前 QQ 入口规则
 
-- 当前 QQ 消息链路：`QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents`
+- 当前主 QQ 消息链路：`QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents`
 - 当前显式绑定：`qqbot:default -> qq-main`
-- 不要为了“省事”把 QQ 入口直接切到子 agent，那会破坏统一协调层
-- 旧的 `NapCat -> qq-bot(FastAPI Bridge)` 链路已退役；仓库里的 `qq-bot/` 仅保留为历史实现参考，不再是现网入口
+- 辅助多 QQ 链路：`NapCat(instance) -> QQ Bridge(instance) -> OpenClaw(target agent)`
+- 不要为了“省事”把 OpenClaw 原生主入口直接切到子 agent，那会破坏统一协调层
+- 仓库里的 `qq-bot/` 仍不是现网主入口，但现在作为多扫码 QQ 辅助入口重新启用
 
 ### 协调规则
 
@@ -103,7 +104,9 @@
 - OpenClaw 公网入口：`http://110.41.170.155/`
 - OpenClaw 内部入口：`http://127.0.0.1:18789/`
 - NapCat 多实例脚本：`scripts/napcat_multi.py`
+- QQ Bridge 多实例脚本：`scripts/qq_bot_multi.py`
 - NapCat 多实例根目录：`/root/napcat-multi`
+- QQ Bridge 多实例根目录：`/root/qq-bot-multi`
 - 已退役历史页面：`/chat-history`、`/api/chat-history`（公网返回 `410`）
 - 旧桥接代码：`qq-bot/`（仅历史参考，不是现网入口）
 

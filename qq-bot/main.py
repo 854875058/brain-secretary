@@ -50,6 +50,9 @@ from bot.runtime_paths import (
 # 配置日志
 ensure_runtime_dirs()
 
+HTTP_HOST = os.environ.get('QQ_BOT_HOST', '127.0.0.1').strip() or '127.0.0.1'
+HTTP_PORT = int(os.environ.get('QQ_BOT_PORT', '8000'))
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -72,6 +75,7 @@ OPENCLAW_TRANSCRIPT_DIR = DEFAULT_OPENCLAW_TRANSCRIPT_DIR
 # 初始化模块
 openclaw_cfg = config.get("openclaw") or {}
 OPENCLAW_ENABLED = bool(openclaw_cfg.get("enabled", True))
+OPENCLAW_PROMPT_PREFIX = str(openclaw_cfg.get("prompt_prefix", "") or "").strip()
 openclaw = OpenClawClient(
     agent_id=openclaw_cfg.get("agent_id", ""),
     thinking=openclaw_cfg.get("thinking", "minimal"),
@@ -701,16 +705,20 @@ async def run_ai_turn(
             )
             await reply_func(build_evolution_ack_text(evolution_state))
 
+    effective_prompt = prompt
+    if OPENCLAW_PROMPT_PREFIX:
+        effective_prompt = OPENCLAW_PROMPT_PREFIX + "\n\n" + prompt
+
     if evolution_mode and not OPENCLAW_ENABLED:
         reply: OpenClawTurnResult | str = '当前未启用 OpenClaw，自助进化/记忆固化无法真正落地到本地文件。'
     elif OPENCLAW_ENABLED:
         try:
-            reply = await openclaw.agent_turn_result(session_id, prompt)
+            reply = await openclaw.agent_turn_result(session_id, effective_prompt)
         except OpenClawError as e:
             logger.error(f"OpenClaw {chat_scope}调用失败: {e}")
             reply = str(e)
     elif ai:
-        reply = await ai.chat(prompt)
+        reply = await ai.chat(effective_prompt)
     else:
         reply = 'AI 后端未配置：请启用 openclaw 或配置 penguin_api'
 
@@ -949,5 +957,5 @@ async def root():
 
 
 if __name__ == "__main__":
-    logger.info("启动 QQ Bot Agent Hub...")
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    logger.info(f"启动 QQ Bot Agent Hub... host={HTTP_HOST} port={HTTP_PORT}")
+    uvicorn.run(app, host=HTTP_HOST, port=HTTP_PORT)

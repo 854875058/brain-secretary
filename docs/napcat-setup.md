@@ -22,8 +22,10 @@
 
 如果只是为了多 QQ 号扫码联调，请使用新的多实例脚本：
 
-- 管理脚本：`/root/brain-secretary/scripts/napcat_multi.py`
+- NapCat 管理脚本：`/root/brain-secretary/scripts/napcat_multi.py`
+- QQ Bridge 管理脚本：`/root/brain-secretary/scripts/qq_bot_multi.py`
 - 示例根目录：`/root/napcat-multi`
+- Bridge 根目录：`/root/qq-bot-multi`
 - 示例映射：`brain -> qq-main`、`tech -> brain-secretary-dev`、`review -> brain-secretary-review`
 
 关键文件：
@@ -38,8 +40,8 @@
 常用命令：
 
 ```bash
-python3 /root/brain-secretary/scripts/napcat_multi.py bootstrap --refresh-workdir
-python3 /root/brain-secretary/scripts/napcat_multi.py status --json
+python3 /root/brain-secretary/scripts/qq_bot_multi.py bootstrap --json
+python3 /root/brain-secretary/scripts/qq_bot_multi.py status --json
 python3 /root/brain-secretary/scripts/napcat_multi.py qr --json
 python3 /root/brain-secretary/scripts/napcat_multi.py stop
 ```

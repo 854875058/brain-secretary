@@ -57,7 +57,9 @@
     "legacy_qq_bridge_logs": "qq-bot/logs",
     "legacy_napcat_start_script": "/root/Napcat/start-qq.sh",
     "napcat_multi_script": "scripts/napcat_multi.py",
-    "napcat_multi_root": "/root/napcat-multi"
+    "napcat_multi_root": "/root/napcat-multi",
+    "qq_bot_multi_script": "scripts/qq_bot_multi.py",
+    "qq_bot_multi_root": "/root/qq-bot-multi"
   },
   "platforms": {
     "linux": {
@@ -86,7 +88,9 @@
         "openclaw agents bindings --json",
         "python3 scripts/napcat_multi.py bootstrap --refresh-workdir",
         "python3 scripts/napcat_multi.py status --json",
-        "python3 scripts/napcat_multi.py qr --json"
+        "python3 scripts/napcat_multi.py qr --json",
+        "python3 scripts/qq_bot_multi.py bootstrap --json",
+        "python3 scripts/qq_bot_multi.py status --json"
       ],
       "components": {
         "model_proxy": {
@@ -169,6 +173,33 @@
               "role": "方案验收号",
               "agent_id": "brain-secretary-review",
               "webui_port": 6103,
+              "onebot_port": 3003
+            }
+          ]
+        },
+        "qq_bridge_multi_examples": {
+          "script": "/root/brain-secretary/scripts/qq_bot_multi.py",
+          "root": "/root/qq-bot-multi",
+          "instances": [
+            {
+              "slug": "brain",
+              "role": "大脑号",
+              "agent_id": "qq-main",
+              "bridge_port": 8011,
+              "onebot_port": 3001
+            },
+            {
+              "slug": "tech",
+              "role": "技术号",
+              "agent_id": "brain-secretary-dev",
+              "bridge_port": 8012,
+              "onebot_port": 3002
+            },
+            {
+              "slug": "review",
+              "role": "方案验收号",
+              "agent_id": "brain-secretary-review",
+              "bridge_port": 8013,
               "onebot_port": 3003
             }
           ]

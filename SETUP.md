@@ -119,14 +119,16 @@ python3 scripts/ops_manager.py logs gateway -n 80
 这套路径不是现网入口，只用于你要的 3 个独立扫码 QQ 示例：
 
 - 根目录：`/root/napcat-multi`
-- 管理脚本：`scripts/napcat_multi.py`
+- NapCat 管理脚本：`scripts/napcat_multi.py`
+- QQ Bridge 管理脚本：`scripts/qq_bot_multi.py`
 - 映射关系：`brain -> qq-main`、`tech -> brain-secretary-dev`、`review -> brain-secretary-review`
+- 对应桥接端口：`8011 / 8012 / 8013`
 
 常用命令：
 
 ```bash
-python3 scripts/napcat_multi.py bootstrap --refresh-workdir
-python3 scripts/napcat_multi.py status --json
+python3 scripts/qq_bot_multi.py bootstrap --json
+python3 scripts/qq_bot_multi.py status --json
 python3 scripts/napcat_multi.py qr --json
 python3 scripts/napcat_multi.py stop
 ```
@@ -184,7 +186,9 @@ curl http://127.0.0.1:18789/
 - OpenClaw 配置文档：`docs/openclaw-setup.md`
 - Linux 运维文档：`docs/systemd-ops.md`
 - NapCat 多实例脚本：`scripts/napcat_multi.py`
+- QQ Bridge 多实例脚本：`scripts/qq_bot_multi.py`
 - NapCat 多实例根目录：`/root/napcat-multi`
+- QQ Bridge 多实例根目录：`/root/qq-bot-multi`
 - 旧桥接代码：`qq-bot/`（历史实现，非现网入口）
 
 ---

@@ -27,6 +27,7 @@ DEFAULT_INSTANCES = [
         'agent_id': 'qq-main',
         'webui_port': 6101,
         'onebot_port': 3001,
+        'bridge_port': 8011,
     },
     {
         'slug': 'tech',
@@ -34,6 +35,7 @@ DEFAULT_INSTANCES = [
         'agent_id': 'brain-secretary-dev',
         'webui_port': 6102,
         'onebot_port': 3002,
+        'bridge_port': 8012,
     },
     {
         'slug': 'review',
@@ -41,6 +43,7 @@ DEFAULT_INSTANCES = [
         'agent_id': 'brain-secretary-review',
         'webui_port': 6103,
         'onebot_port': 3003,
+        'bridge_port': 8013,
     },
 ]
 
@@ -106,11 +109,13 @@ def copy_workdir(src: Path, dst: Path) -> None:
 
 
 def reset_runtime_dirs(workdir: Path) -> None:
-    for relative in ('cache', 'logs'):
-        target = workdir / relative
-        if target.exists():
-            shutil.rmtree(target)
-        target.mkdir(parents=True, exist_ok=True)
+    cache_dir = workdir / 'cache'
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+    logs_dir = workdir / 'logs'
+    if logs_dir.exists():
+        shutil.rmtree(logs_dir)
+    logs_dir.mkdir(parents=True, exist_ok=True)
 
 
 def remove_account_specific_configs(config_dir: Path) -> None:
@@ -134,7 +139,13 @@ def configure_workdir(workdir: Path, definition: dict[str, Any]) -> None:
     http_cfg['enable'] = True
     http_cfg['host'] = '127.0.0.1'
     http_cfg['port'] = int(definition['onebot_port'])
-    http_cfg['post'] = []
+    bridge_port = definition.get('bridge_port')
+    http_cfg['post'] = [
+        {
+            'url': f"http://127.0.0.1:{int(bridge_port)}/qq/message",
+            'secret': '',
+        }
+    ] if bridge_port else []
     onebot.setdefault('ws', {})['enable'] = False
     onebot.setdefault('reverseWs', {})['enable'] = False
     onebot['token'] = ''
