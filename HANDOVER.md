@@ -116,6 +116,7 @@ ss -lntp | rg ':80 |:18789 '
 - 脑 workspace：`/root/.openclaw/workspace`
 - 运维真源：`/root/brain-secretary/ops/deployment_manifest.json`
 - QQ Bot 插件目录：`/root/.openclaw/extensions/qqbot`
+- 当前插件来源：`@openclaw-china/qqbot`（npm）
 - OpenClaw 公网入口：`http://110.41.170.155/`
 - OpenClaw 内部入口：`http://127.0.0.1:18789/`
 - 旧桥接代码：`/root/brain-secretary/qq-bot/`
@@ -126,6 +127,7 @@ ss -lntp | rg ':80 |:18789 '
 ## 已验证事实
 
 - `qqbot` 插件已安装并能被 Gateway 加载
+- `plugins.installs.qqbot` 已记录标准 npm 安装来源：`@openclaw-china/qqbot`
 - `QQ Bot default` 渠道已配置、启用
 - `qqbot:default -> qq-main` 绑定已生效
 - `openclaw-qq-bridge.service` 已停用并禁用
@@ -138,7 +140,7 @@ ss -lntp | rg ':80 |:18789 '
 
 - `openclaw status` 当前仍有安全告警：`dangerouslyDisableDeviceAuth=true`、未配置 auth rate limit
 - `channels.qqbot.allowFrom=["*"]` 代表当前 QQ Bot 渠道允许所有来源；如果后续收口，需要改成显式白名单
-- `qqbot` 通过本地扩展目录加载，当前会看到 provenance / 本地信任提示，不影响运行
+- `openclaw plugins list` 的版本列取自插件 manifest，可能与 npm 包版本不同；排障时以 `plugins.installs.qqbot` 与 `/root/.openclaw/extensions/qqbot/package.json` 为准
 
 ---
 

@@ -39,6 +39,8 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents -> qq-main -> QQ Bot -
 - `channels.qqbot.enabled = true`
 - `plugins.allow = ["qqbot"]`
 - `qq-main` 已绑定 `qqbot:default`
+- `channels.qqbot.markdownSupport = false`
+- `plugins.installs.qqbot.spec = "@openclaw-china/qqbot"`
 - `qq-main.subagents.allowAgents = ["brain-secretary-dev"]`
 - `tools.agentToAgent.allow = ["qq-main", "brain-secretary-dev"]`
 - `tools.sessions.visibility = "all"`
@@ -50,13 +52,14 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents -> qq-main -> QQ Bot -
 ### 安装 / 更新插件
 
 ```bash
-openclaw plugins install @sliverp/qqbot@latest
+openclaw plugins install @openclaw-china/qqbot
 ```
 
 ### 配置 QQ 渠道
 
 ```bash
 openclaw channels add --channel qqbot --token "<appid>:<clientSecret>"
+openclaw config set channels.qqbot.markdownSupport false
 ```
 
 ### 绑定到 `qq-main`
@@ -88,7 +91,8 @@ systemctl --user restart openclaw-gateway.service
 如果你升级了 `qqbot` 插件：
 
 ```bash
-openclaw plugins install @sliverp/qqbot@latest
+openclaw plugins install @openclaw-china/qqbot
+openclaw config validate
 systemctl --user restart openclaw-gateway.service
 ```
 
@@ -99,4 +103,12 @@ systemctl --user restart openclaw-gateway.service
 - 不要把 QQ 入口直接绑到子 agent
 - 不要把 token / client secret / API key 抄进公开文档
 - 当前 `channels.qqbot.allowFrom=["*"]` 会触发多用户信任边界警告；如果后续要收口，应改成显式白名单
+- 旧教程里提到的 `@sliverp/qqbot`、`qgbot`、`ggbot` 都按历史/笔误处理；现网统一使用 `@openclaw-china/qqbot`
 - 旧 `NapCat -> qq-bot` 桥接链路已经退役；如非明确回滚，不要重新启用
+
+## 兼容迁移说明
+
+- 如果机器上已经存在旧版本地 `qqbot` 目录，不要先删插件再重启 Gateway；配置校验会因为 `qqbot` 渠道缺失而报 `unknown channel id: qqbot`
+- 旧版目录与新包同名时，直接再次执行 `openclaw plugins install` 可能会遇到 `plugin already exists`；先备份 `/root/.openclaw/openclaw.json`，再做原位替换或在干净环境安装
+- 迁移完成后，确认 `/root/.openclaw/openclaw.json` 中存在 `plugins.installs.qqbot`，并重启 `openclaw-gateway.service`
+- `openclaw plugins list` 里的版本列来自 `openclaw.plugin.json`，可能与 npm 包版本不同；以 `plugins.installs.qqbot` 或 `/root/.openclaw/extensions/qqbot/package.json` 为准

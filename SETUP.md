@@ -36,14 +36,14 @@ Windows 仍可手工启动，但以 Linux 常驻方案为主。
 
 - OpenClaw 已安装
 - OpenClaw model proxy 已可用
-- `qqbot` 插件已安装
+- `qqbot` 插件（`@openclaw-china/qqbot`）已安装
 - QQ Bot 渠道 token 已配置到 OpenClaw
 - root 用户已开启 `linger`
 
 ### Windows 手工方案
 
 - OpenClaw 已安装
-- `qqbot` 插件已安装
+- `qqbot` 插件（`@openclaw-china/qqbot`）已安装
 - Python 3 已安装（仅仓库脚本需要时）
 
 ---
@@ -60,8 +60,9 @@ python3 scripts/ops_manager.py status all
 ### 2) 配置 QQ 渠道（如首次部署）
 
 ```bash
-openclaw plugins install @sliverp/qqbot@latest
+openclaw plugins install @openclaw-china/qqbot
 openclaw channels add --channel qqbot --token "<appid>:<clientSecret>"
+openclaw config set channels.qqbot.markdownSupport false
 openclaw agents bind --agent qq-main --bind qqbot:default
 ```
 
@@ -123,8 +124,9 @@ openclaw gateway --port 18789
 ### 2) 安装并配置 `qqbot` 渠道
 
 ```powershell
-openclaw plugins install @sliverp/qqbot@latest
+openclaw plugins install @openclaw-china/qqbot
 openclaw channels add --channel qqbot --token "<appid>:<clientSecret>"
+openclaw config set channels.qqbot.markdownSupport false
 openclaw agents bind --agent qq-main --bind qqbot:default
 ```
 
@@ -154,6 +156,7 @@ curl http://127.0.0.1:18789/
 
 - OpenClaw 配置：`/root/.openclaw/openclaw.json`
 - QQ Bot 插件目录：`/root/.openclaw/extensions/qqbot`
+- 当前插件来源：`@openclaw-china/qqbot`（npm）
 - 脑 workspace：`/root/.openclaw/workspace`
 - 主仓：`/root/brain-secretary`
 - 运维脚本：`scripts/ops_manager.py`

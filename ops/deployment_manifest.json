@@ -39,6 +39,8 @@
     "ops_manifest": "ops/deployment_manifest.json",
     "openclaw_config": "/root/.openclaw/openclaw.json",
     "openclaw_channel_plugin": "/root/.openclaw/extensions/qqbot",
+    "openclaw_channel_plugin_source": "npm",
+    "openclaw_channel_plugin_spec": "@openclaw-china/qqbot",
     "openclaw_brain_workspace": "/root/.openclaw/workspace",
     "model_proxy_script": "/root/.openclaw/model-proxy.mjs",
     "model_proxy_env": "/root/.openclaw/model-proxy.env",
@@ -177,7 +179,10 @@
         {
           "channel": "qqbot",
           "account_id": "default",
-          "status": "enabled"
+          "status": "enabled",
+          "plugin_source": "npm",
+          "plugin_spec": "@openclaw-china/qqbot",
+          "markdown_support": false
         }
       ]
     },

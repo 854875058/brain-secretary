@@ -153,6 +153,7 @@ nginx -t && systemctl reload nginx
 
 - OpenClaw 配置：`/root/.openclaw/openclaw.json`
 - QQ Bot 插件目录：`/root/.openclaw/extensions/qqbot`
+- 当前插件来源：`@openclaw-china/qqbot`（npm）
 - 脑 workspace：`/root/.openclaw/workspace`
 - 运维脚本：`/root/brain-secretary/scripts/ops_manager.py`
 - 运维真源：`/root/brain-secretary/ops/deployment_manifest.json`
@@ -182,11 +183,15 @@ openclaw agents bind --agent qq-main --bind qqbot:default
 
 这不是宕机问题，但代表当前 QQ 渠道允许所有来源；如果要收口，需要改 `channels.qqbot.allowFrom`。
 
-### 3) 访问 `/chat-history` 返回 `410`
+### 3) `openclaw plugins list` 里的 `qqbot` 版本看起来不对
+
+`openclaw plugins list` 的版本列来自插件 manifest，可能显示为 `0.1.0`；这不代表安装失败。真实安装来源与版本以 `/root/.openclaw/openclaw.json` 的 `plugins.installs.qqbot` 和 `/root/.openclaw/extensions/qqbot/package.json` 为准。
+
+### 4) 访问 `/chat-history` 返回 `410`
 
 这是预期行为。历史聊天记录页面已随旧桥接链路退役。
 
-### 4) 想确认旧服务确实下线
+### 5) 想确认旧服务确实下线
 
 ```bash
 systemctl --user status openclaw-qq-bridge.service napcat-qq.service

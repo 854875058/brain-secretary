@@ -49,6 +49,8 @@
 - `channels.qqbot.enabled = true`
 - `plugins.allow = ["qqbot"]`
 - `qq-main` 已绑定 `qqbot:default`
+- `channels.qqbot.markdownSupport = false`
+- `plugins.installs.qqbot.spec = "@openclaw-china/qqbot"`
 - `qq-main.subagents.allowAgents = ["brain-secretary-dev"]`
 - `tools.agentToAgent.enabled = true`
 - `tools.sessions.visibility = "all"`
@@ -96,6 +98,7 @@
 - 部署手册：`SETUP.md`
 - OpenClaw 配置：`/root/.openclaw/openclaw.json`
 - OpenClaw 插件目录：`/root/.openclaw/extensions/qqbot`
+- 当前插件来源：`@openclaw-china/qqbot`（npm）
 - OpenClaw 公网入口：`http://110.41.170.155/`
 - OpenClaw 内部入口：`http://127.0.0.1:18789/`
 - 已退役历史页面：`/chat-history`、`/api/chat-history`（公网返回 `410`）
@@ -132,6 +135,7 @@ openclaw agents bindings --json
 ## 当前已验证事实
 
 - `qqbot` 插件已安装并加载
+- `plugins.installs.qqbot` 已记录标准 npm 安装来源：`@openclaw-china/qqbot`
 - `QQ Bot default` 渠道已配置并启用
 - `qqbot:default -> qq-main` 绑定已生效
 - 旧 `NapCat / qq-bot(FastAPI Bridge)` 现网服务已停用
@@ -141,4 +145,4 @@ openclaw agents bindings --json
 
 - `openclaw status` 仍会提示：`channels.qqbot.allowFrom=["*"]`，这是多用户信任边界风险
 - `openclaw status` 仍会提示：`dangerouslyDisableDeviceAuth=true` 与认证限流未配置
-- `qqbot` 当前以本地扩展目录加载，会提示 provenance / 本地信任告警；不影响运行，但后续若要完全消警，需补标准安装来源记录
+- `openclaw plugins list` 的版本列取自插件 manifest，可能与 npm 包版本不同；排障时以 `plugins.installs.qqbot` 与 `/root/.openclaw/extensions/qqbot/package.json` 为准
