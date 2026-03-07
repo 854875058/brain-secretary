@@ -4,6 +4,7 @@ from bot.monitor import get_status_report, refresh_agent_status
 from bot.task_db import get_recent_tasks
 from bot.async_notifier import deliver_async_internal_updates
 from bot.task_sync import sync_local_checklist_milestones, sync_task_checklist_from_transcripts
+from bot.runtime_paths import BOT_LOG_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,7 @@ def setup_scheduled_tasks(qq_sender, target_qq: int, transcript_dir: str | None 
         try:
             if not transcript_dir:
                 return
-            updated = await sync_task_checklist_from_transcripts('logs/bot.log', transcript_dir, target_qq)
+            updated = await sync_task_checklist_from_transcripts(BOT_LOG_PATH, transcript_dir, target_qq)
             local_updates = await sync_local_checklist_milestones(target_qq)
             if updated or local_updates:
                 logger.info(f"任务清单已同步：transcript_updates={updated} local_updates={local_updates}")

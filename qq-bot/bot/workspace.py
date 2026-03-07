@@ -2,10 +2,11 @@ import aiosqlite
 import os
 import logging
 from datetime import datetime
+from bot.runtime_paths import TASK_DB_PATH
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = "data/tasks.db"
+DB_PATH = str(TASK_DB_PATH)
 
 
 async def init_workspace_db():

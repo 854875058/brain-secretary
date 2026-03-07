@@ -20,7 +20,7 @@
 ## 当前实际链路
 
 ```text
-QQ -> NapCat -> qq-bot(FastAPI Bridge) -> OpenClaw(qq-main) -> 子 agents -> qq-main -> qq-bot -> NapCat -> QQ
+QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> brain-secretary-dev(按需) -> qq-main -> QQ Bot -> QQ
 ```
 
 ---
@@ -38,7 +38,7 @@ QQ -> NapCat -> qq-bot(FastAPI Bridge) -> OpenClaw(qq-main) -> 子 agents -> qq-
 
 | 功能 | 说明 |
 |---|---|
-| QQ 接入 | 通过 NapCat + qq-bot 桥接 QQ |
+| QQ 接入 | 通过 OpenClaw 原生 `qqbot` 渠道接入 QQ |
 | 大脑协调 | `qq-main` 解析自然语言、拆解任务、调度子 agent |
 | 多 Agent 协作 | 真实使用 OpenClaw 子 agent / 多 agent 能力 |
 | 工程实施 | 子 agent 在各自 workspace 内完成具体代码和文档修改 |
@@ -73,13 +73,12 @@ brain-secretary/
 
 - OpenClaw 配置文件：`/root/.openclaw/openclaw.json`
 - 脑 workspace：`/root/.openclaw/workspace`
-- 当前 Linux 部署方式：`systemctl --user`
-- 当前 QQ Bridge OpenClaw 入口：`qq-main`
+- 当前 Linux 部署方式：`systemctl --user + nginx`
+- 当前 QQ 渠道绑定：`qqbot:default -> qq-main`
 - 当前关键端口：
-  - OpenClaw：`80`
-  - QQ Bridge：`8000`
-  - NapCat HTTP API：`3000`
-  - NapCat WebUI：`6099`
+  - OpenClaw 公网入口：`80`
+  - OpenClaw 内部 Dashboard：`18789`
+- `qq-bot/` 目录当前仅保留为历史兼容实现与迁移参考，不是现网入口。
 
 ---
 

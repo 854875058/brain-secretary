@@ -35,26 +35,39 @@ from bot.evolution_loop import (
     update_evolution_request_from_sync_reply,
 )
 from bot.tts_service import TTSService, TTSServiceError
+from bot.runtime_paths import (
+    BOT_LOG_PATH,
+    CONFIG_PATH,
+    OPENCLAW_TRANSCRIPT_DIR as DEFAULT_OPENCLAW_TRANSCRIPT_DIR,
+    TEST_FILE_PATH,
+    TEST_IMAGE_PATH,
+    TEST_VIDEO_PATH,
+    TEST_VOICE_PATH,
+    TTS_OUTPUT_DIR,
+    ensure_runtime_dirs,
+)
 
 # 配置日志
+ensure_runtime_dirs()
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('logs/bot.log', encoding='utf-8'),
+        logging.FileHandler(BOT_LOG_PATH, encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
 
 # 加载配置
-with open('config.yaml', 'r', encoding='utf-8') as f:
+with CONFIG_PATH.open('r', encoding='utf-8') as f:
     config = yaml.safe_load(f)
 
 app = FastAPI()
 
-LOG_FILE = os.path.abspath('logs/bot.log')
-OPENCLAW_TRANSCRIPT_DIR = os.path.expanduser('~/.openclaw/agents/qq-main/sessions')
+LOG_FILE = BOT_LOG_PATH
+OPENCLAW_TRANSCRIPT_DIR = DEFAULT_OPENCLAW_TRANSCRIPT_DIR
 
 # 初始化模块
 openclaw_cfg = config.get("openclaw") or {}
@@ -75,7 +88,6 @@ if penguin_cfg.get("base_url") and penguin_cfg.get("api_key") and penguin_cfg.ge
     )
 
 qq = QQSender(napcat_url=config['napcat']['url'])
-TTS_OUTPUT_DIR = Path('data/generated_tts')
 tts_service = TTSService(TTS_OUTPUT_DIR)
 ADMIN_QQ = config['admin']['qq_number']
 security_cfg = config.get("security") or {}
@@ -93,10 +105,6 @@ EVOLUTION_EXTRA_KEYWORDS = [
     for item in (evolution_cfg.get("extra_keywords") or [])
     if str(item).strip()
 ]
-
-# 确保数据目录存在
-os.makedirs('data', exist_ok=True)
-
 
 # 自动扫描的项目目录
 PROJECT_SCAN_DIRS = config.get('project_dirs', [
@@ -381,14 +389,14 @@ def build_media_capability_prompt(user_message: str, media_types: list[str]) -> 
         instruction_blocks.append(
             '图片发送规则：\n'
             '1. 如已有图片直链，单独输出一行：`[[send_image]] <图片URL>`\n'
-            '2. 如只是验证能力，可直接用：`[[send_image]] file:///root/brain-secretary/qq-bot/data/openclaw-test-image.png`\n'
+            f'2. 如只是验证能力，可直接用：`[[send_image]] {TEST_IMAGE_PATH.resolve().as_uri()}`\n'
             '3. 不要再说“不能发图片文件”'
         )
     if 'file' in media_types:
         instruction_blocks.append(
             '文件发送规则：\n'
             '1. 单独输出一行：`[[send_file]] <file://本地路径或URL>`\n'
-            '2. 如只是验证能力，可直接用：`[[send_file]] file:///root/brain-secretary/qq-bot/data/openclaw-test-file.txt`\n'
+            f'2. 如只是验证能力，可直接用：`[[send_file]] {TEST_FILE_PATH.resolve().as_uri()}`\n'
             '3. 可以附一句简短说明，但不要只给下载建议不执行'
         )
     if 'voice' in media_types:
@@ -396,14 +404,14 @@ def build_media_capability_prompt(user_message: str, media_types: list[str]) -> 
             '语音发送规则：\n'
             '1. 单独输出一行：`[[send_voice]] <file://本地路径或URL>`\n'
             '2. 若你只有文本内容、需要桥接层现合成语音，优先输出：`[[send_tts]] 这里写要说的话`\n'
-            '3. 如只是验证能力，可直接用：`[[send_voice]] file:///root/brain-secretary/qq-bot/data/openclaw-test-voice.wav`\n'
+            f'3. 如只是验证能力，可直接用：`[[send_voice]] {TEST_VOICE_PATH.resolve().as_uri()}`\n'
             '4. 不要再说“不能发语音”'
         )
     if 'video' in media_types:
         instruction_blocks.append(
             '视频发送规则：\n'
             '1. 单独输出一行：`[[send_video]] <file://本地路径或URL>`\n'
-            '2. 如只是验证能力，可直接用：`[[send_video]] file:///root/brain-secretary/qq-bot/data/openclaw-test-video.mp4`\n'
+            f'2. 如只是验证能力，可直接用：`[[send_video]] {TEST_VIDEO_PATH.resolve().as_uri()}`\n'
             '3. 不要再说“不能发视频”'
         )
     joined_types = ' / '.join(media_types) or '媒体'
@@ -859,8 +867,8 @@ async def api_chat_history(
 ):
     require_history_token(token)
     return build_chat_history_payload(
-        log_path=Path(LOG_FILE),
-        transcript_dir=Path(OPENCLAW_TRANSCRIPT_DIR),
+        log_path=LOG_FILE,
+        transcript_dir=OPENCLAW_TRANSCRIPT_DIR,
         user_id=parse_optional_int_query(user_id, "user_id"),
         group_id=parse_optional_int_query(group_id, "group_id"),
         chat_type=chat_type,
@@ -894,8 +902,8 @@ async def chat_history_page(
 ):
     require_history_token(token)
     payload = build_chat_history_payload(
-        log_path=Path(LOG_FILE),
-        transcript_dir=Path(OPENCLAW_TRANSCRIPT_DIR),
+        log_path=LOG_FILE,
+        transcript_dir=OPENCLAW_TRANSCRIPT_DIR,
         user_id=parse_optional_int_query(user_id, "user_id"),
         group_id=parse_optional_int_query(group_id, "group_id"),
         chat_type=chat_type,
@@ -917,7 +925,7 @@ async def root():
     return {
         "status": "running",
         "projects": len(projects),
-        "message": "QQ Bot Agent Hub is running"
+        "message": "Legacy QQ bridge compatibility service is running"
     }
 
 

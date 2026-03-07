@@ -10,9 +10,9 @@ class PenguinAI:
         self.api_key = api_key
         self.model = model
 
-    async def chat(self, user_message: str, history: list = None):
+    async def chat(self, user_message: str, history: list | None = None):
         """调用 AI 获取回复"""
-        messages = history or []
+        messages = list(history or [])
         messages.append({"role": "user", "content": user_message})
 
         try:

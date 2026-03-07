@@ -15,8 +15,8 @@ from typing import Any
 import wave
 
 from bot.qq_sender import QQSender
+from bot.runtime_paths import INBOX_ROOT
 
-INBOX_ROOT = Path('data/inbox')
 TEXT_EXTENSIONS = {
     '.txt', '.md', '.markdown', '.csv', '.tsv', '.json', '.yaml', '.yml', '.ini', '.toml',
     '.log', '.py', '.js', '.ts', '.tsx', '.jsx', '.java', '.go', '.rs', '.c', '.cpp', '.h',
