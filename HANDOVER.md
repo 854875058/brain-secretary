@@ -122,6 +122,7 @@ ss -lntp | rg ':80 |:18789 '
 - OpenClaw 配置：`/root/.openclaw/openclaw.json`
 - 脑 workspace：`/root/.openclaw/workspace`
 - 运维真源：`/root/brain-secretary/ops/deployment_manifest.json`
+- 项目注册表：`/root/brain-secretary/ops/project_registry.json`
 - QQ Bot 插件目录：`/root/.openclaw/extensions/qqbot`
 - 当前插件来源：`@openclaw-china/qqbot`（npm）
 - OpenClaw 公网入口：`http://110.41.170.155/`
@@ -256,6 +257,7 @@ python3 scripts/napcat_multi.py qr --json
 - `agent/<project>`：晚上 agent 分支
 - 文档：`docs/project-sync-branch-workflow.md`
 - 双轨同步脚本：`scripts/project_sync.py`
+- 项目注册表脚本：`scripts/project_registry.py`
 - Windows 自动跟踪脚本：`scripts/windows_project_autosync.ps1`
 - Windows 自动跟踪批处理：`scripts/windows_project_autosync.bat`
 - Paperclip 桥接文档：`docs/paperclip-qq-bridge.md`
@@ -271,6 +273,12 @@ python3 scripts/napcat_multi.py qr --json
 - Paperclip 运行时部署：`scripts/paperclip_runtime_apply.sh`
 - Paperclip Seed：`scripts/paperclip_seed.py`
 - 示例配置：`ops/project-sync.example.json`
+
+项目定位与返工约定：
+
+- 命中 `ops/project_registry.json` 的项目时，不要先向用户追问路径/仓库。
+- 当前稳定映射：用户说“铁塔 / 铁塔项目 / 铁塔多模态检索”时，默认指 `https://github.com/854875058/Tower-Eye`。
+- 对缺依赖、缺测试工具、仓库未克隆这类可恢复阻塞，默认由内部技术链路自己补齐；验收发现问题后，大脑应自动打回技术号继续修。
 
 
 ## Paperclip 当前状态

@@ -1,0 +1,41 @@
+{
+  "projects": [
+    {
+      "id": "brain-secretary",
+      "name": "brain-secretary",
+      "aliases": [
+        "大脑秘书",
+        "秘书项目",
+        "openclaw秘书",
+        "brain secretary"
+      ],
+      "repo_url": "https://github.com/854875058/brain-secretary",
+      "default_branch": "main",
+      "preferred_work_branch": "main",
+      "local_paths": [
+        "/root/brain-secretary"
+      ],
+      "notes": "主协调仓库；涉及 OpenClaw、QQ、Paperclip、部署、文档、脚本时，默认先看这个仓库。"
+    },
+    {
+      "id": "tower-eye",
+      "name": "Tower-Eye",
+      "aliases": [
+        "tower-eye",
+        "铁塔",
+        "铁塔项目",
+        "铁塔多模态检索",
+        "多模态检索铁塔",
+        "铁塔的多模态检索项目"
+      ],
+      "repo_url": "https://github.com/854875058/Tower-Eye",
+      "default_branch": "main",
+      "preferred_work_branch": "feat/tower-eye-review-fix",
+      "local_paths": [
+        "/tmp/tower-eye-review-fix/repo",
+        "/root/projects/Tower-Eye"
+      ],
+      "notes": "用户口中的“铁塔多模态检索项目”默认指这个仓库。用户要求所有修改先进新分支，不要直接动 main。若正式落盘目录不存在，但服务器上 gh 已登录，可先用 gh/git 克隆到临时目录执行。"
+    }
+  ]
+}

@@ -27,6 +27,7 @@ from bot.task_db import (
 from bot.agent_manager import dispatch_task
 from bot.workspace import init_workspace_db, add_knowledge, search_knowledge, list_knowledge, get_knowledge, post_bulletin, get_unread_bulletins
 from bot.memory_center import build_memory_context, remember_text, render_recent_entries, render_search_results
+from bot.project_registry import build_project_registry_context, iter_registry_local_projects
 from bot.monitor import get_status_report, refresh_agent_status
 from bot.chat_history import build_chat_history_payload, render_chat_history_page
 from bot.media_context import build_user_message_with_media_context, extract_plain_text
@@ -159,13 +160,26 @@ CONTROL_MARKER_RE = re.compile(r'\[\[(?:reply_to_current)\]\]\s*')
 async def auto_register_projects():
     """自动扫描并注册项目"""
     skip_dirs = {"qq-bot", ".claude", ".idea", "__pycache__", ".git", "venv", "node_modules"}
+    registered_paths: set[str] = set()
+
+    for project in iter_registry_local_projects():
+        full_path = os.path.abspath(project['path'])
+        if full_path in registered_paths:
+            continue
+        await register_project(project['name'], full_path, project['description'])
+        registered_paths.add(full_path)
+        logger.info(f"项目注册表命中: {project['name']} -> {full_path}")
+
     for scan_dir in PROJECT_SCAN_DIRS:
         if not os.path.isdir(scan_dir):
             continue
         for name in os.listdir(scan_dir):
-            full_path = os.path.join(scan_dir, name)
-            if os.path.isdir(full_path) and name not in skip_dirs and not name.startswith("."):
+            full_path = os.path.abspath(os.path.join(scan_dir, name))
+            if full_path in registered_paths:
+                continue
+            if os.path.isdir(full_path) and name not in skip_dirs and not name.startswith('.'):
                 await register_project(name, full_path, f"自动扫描: {full_path}")
+                registered_paths.add(full_path)
                 logger.info(f"注册项目: {name} -> {full_path}")
 
 
@@ -753,9 +767,11 @@ async def run_ai_turn(
             logger.warning('桥接层记忆固化失败: %s', exc)
 
     effective_prompt = prompt
+    project_context = build_project_registry_context(evolution_user_message or prompt, limit=3)
     memory_context = build_memory_context(evolution_user_message or prompt, limit=6)
-    if memory_context:
-        effective_prompt = memory_context + "\n\n" + effective_prompt
+    context_blocks = [block for block in [project_context, memory_context] if block]
+    if context_blocks:
+        effective_prompt = "\n\n".join(context_blocks + [effective_prompt])
     if OPENCLAW_PROMPT_PREFIX:
         effective_prompt = OPENCLAW_PROMPT_PREFIX + "\n\n" + effective_prompt
 

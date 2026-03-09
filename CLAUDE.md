@@ -95,6 +95,7 @@
 
 - 运维脚本：`scripts/ops_manager.py`
 - 运维清单：`ops/deployment_manifest.json`
+- 项目注册表：`ops/project_registry.json`
 - 交接文档：`HANDOVER.md`
 - Linux 运维文档：`docs/systemd-ops.md`
 - OpenClaw 配置文档：`docs/openclaw-setup.md`
@@ -113,6 +114,7 @@
 - Windows 本地远程应用脚本：`scripts/windows_local_qq_remote_apply.ps1`
 - 桥接记忆中心脚本：`scripts/memory_center.py`
 - 双轨分支同步脚本：`scripts/project_sync.py`
+- 项目注册表脚本：`scripts/project_registry.py`
 - Windows 项目自动跟踪脚本：`scripts/windows_project_autosync.ps1`
 - Windows 项目自动跟踪批处理：`scripts/windows_project_autosync.bat`
 - 双轨分支工作流文档：`docs/project-sync-branch-workflow.md`
