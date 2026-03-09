@@ -141,6 +141,7 @@ python3 scripts/paperclip_seed.py --json
 - Paperclip 数据：`/home/paperclip/paperclip-data`
 - 内部 API：`http://127.0.0.1:3110`
 - 公网 viewer：`http://110.41.170.155/paperclip/`（推荐，走 `nginx /paperclip/ + basic auth`）
+- viewer 默认会注入中文汉化补丁，页面刷新后即可看到中文 UI
 - viewer 凭据：`/root/.config/brain-secretary/paperclip-viewer.env`
 - 本机桥接 env：`ops/paperclip.local.env`
 

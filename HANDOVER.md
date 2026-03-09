@@ -259,6 +259,7 @@ python3 scripts/napcat_multi.py qr --json
 - Windows 自动跟踪批处理：`scripts/windows_project_autosync.bat`
 - Paperclip 桥接文档：`docs/paperclip-qq-bridge.md`
 - Paperclip CLI：`scripts/paperclip_cli.py`
+- Paperclip 中文补丁：`scripts/paperclip_ui_zh_patch.py`
 - Paperclip 代码目录：`/home/paperclip/paperclip`
 - Paperclip 数据目录：`/home/paperclip/paperclip-data`
 - Paperclip 内部地址：`http://127.0.0.1:3110`

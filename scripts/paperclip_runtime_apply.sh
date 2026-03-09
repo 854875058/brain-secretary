@@ -16,6 +16,7 @@ SYSTEMD_UNIT_PATH="${PAPERCLIP_SYSTEMD_UNIT_PATH:-/etc/systemd/system/paperclip.
 NGINX_CONF_PATH="${PAPERCLIP_NGINX_CONF_PATH:-/etc/nginx/sites-available/paperclip-public.conf}"
 NGINX_ENABLED_PATH="${PAPERCLIP_NGINX_ENABLED_PATH:-/etc/nginx/sites-enabled/paperclip-public.conf}"
 OPENCLAW_PUBLIC_NGINX_PATH="${PAPERCLIP_OPENCLAW_PUBLIC_NGINX_PATH:-/etc/nginx/sites-available/openclaw-public.conf}"
+UI_ZH_PATCH_SCRIPT="${PAPERCLIP_UI_ZH_PATCH_SCRIPT:-/root/brain-secretary/scripts/paperclip_ui_zh_patch.py}"
 VIEWER_ENV_FILE="${PAPERCLIP_VIEWER_ENV_FILE:-/root/.config/brain-secretary/paperclip-viewer.env}"
 HTPASSWD_PATH="${PAPERCLIP_HTPASSWD_PATH:-/etc/nginx/.paperclip_htpasswd}"
 VIEWER_USER="${PAPERCLIP_VIEWER_USER:-paperclip}"
@@ -202,6 +203,8 @@ with tempfile.TemporaryDirectory(prefix='paperclip-ui-dist-') as tmp:
         for name in files:
             os.chown(os.path.join(root, name), uid, gid)
 PY2
+
+python3 "$UI_ZH_PATCH_SCRIPT" --ui-dist "$PAPERCLIP_DIR/server/ui-dist" --public-base-path "$PUBLIC_BASE_PATH" >/dev/null
 
 cat > "$VIEWER_ENV_FILE" <<EOF2
 PAPERCLIP_VIEWER_URL=$PAPERCLIP_PUBLIC_URL

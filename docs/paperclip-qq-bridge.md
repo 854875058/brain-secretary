@@ -24,6 +24,7 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents
 - Paperclip 代码目录：`/home/paperclip/paperclip`
 - Paperclip 数据目录：`/home/paperclip/paperclip-data`
 - Paperclip viewer 凭据文件：`/root/.config/brain-secretary/paperclip-viewer.env`
+- Paperclip 中文补丁脚本：`scripts/paperclip_ui_zh_patch.py`
 - 本机 QQ / CLI 桥接 env：`ops/paperclip.local.env`
 
 ---
@@ -82,6 +83,7 @@ bash scripts/paperclip_runtime_apply.sh
 - 写入 `paperclip.service`
 - 写入 `nginx` 的 `paperclip-public.conf`
 - 生成 viewer basic auth 凭据
+- 自动注入中文汉化补丁（`zh-patch.js`）
 - 启动 `paperclip.service`
 - 重载 `nginx`
 

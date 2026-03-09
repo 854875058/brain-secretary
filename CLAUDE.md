@@ -117,6 +117,7 @@
 - 双轨分支工作流文档：`docs/project-sync-branch-workflow.md`
 - Paperclip 桥接文档：`docs/paperclip-qq-bridge.md`
 - Paperclip CLI：`scripts/paperclip_cli.py`
+- Paperclip 中文补丁：`scripts/paperclip_ui_zh_patch.py`
 - Paperclip 代码目录：`/home/paperclip/paperclip`
 - Paperclip 数据目录：`/home/paperclip/paperclip-data`
 - Paperclip 内部地址：`http://127.0.0.1:3110`

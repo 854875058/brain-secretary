@@ -73,7 +73,8 @@
     "paperclip_bootstrap_script": "scripts/paperclip_bootstrap.sh",
     "paperclip_runtime_apply_script": "scripts/paperclip_runtime_apply.sh",
     "paperclip_seed_script": "scripts/paperclip_seed.py",
-    "paperclip_cli_script": "scripts/paperclip_cli.py"
+    "paperclip_cli_script": "scripts/paperclip_cli.py",
+    "paperclip_ui_zh_patch_script": "scripts/paperclip_ui_zh_patch.py"
   },
   "platforms": {
     "linux": {
