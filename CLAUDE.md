@@ -63,19 +63,20 @@
 
 ## 当前约定
 
-- Linux 当前部署方式：`systemd --user(OpenClaw + projection)` + `systemd(Paperclip)` + `nginx`
+- Linux 当前部署方式：`systemd --user(OpenClaw + projection + auto-evolve)` + `systemd(Paperclip)` + `nginx`
 - Linux 当前 OpenClaw 配置文件：`/root/.openclaw/openclaw.json`
 - Linux 当前现网关键服务：
   - `openclaw-model-proxy.service`
   - `openclaw-gateway.service`
   - `openclaw-paperclip-projection.service`
+  - `openclaw-project-auto-evolve.service`
   - `nginx.service`
 - Linux 当前已退役服务：
   - `openclaw-qq-bridge.service`（已停用）
   - `napcat-qq.service`（已停用）
 - 关键服务分组：
   - `frontend` = `public_proxy`
-  - `backend` = `model_proxy + gateway + paperclip + paperclip_projection`
+  - `backend` = `model_proxy + gateway + paperclip + paperclip_projection + project_auto_evolve`
   - `all` = 当前平台全部关键组件
 - 不要优先手工 `kill` 进程；先尝试统一运维脚本
 - 不要把密钥、token、私密配置直接写入文档
@@ -114,6 +115,11 @@
 - Windows 本地远程应用脚本：`scripts/windows_local_qq_remote_apply.ps1`
 - 桥接记忆中心脚本：`scripts/memory_center.py`
 - 双轨分支同步脚本：`scripts/project_sync.py`
+- 双轨分支配置：`ops/project-sync.json`
+- 自动进化配置：`ops/auto-evolve.json`
+- 自动进化守护脚本：`scripts/project_auto_evolve_daemon.py`
+- 自动进化安装脚本：`scripts/project_auto_evolve_apply.sh`
+- 主分支保护脚本：`scripts/git_branch_guard.py`
 - 项目注册表脚本：`scripts/project_registry.py`
 - Windows 项目自动跟踪脚本：`scripts/windows_project_autosync.ps1`
 - Windows 项目自动跟踪批处理：`scripts/windows_project_autosync.bat`
@@ -197,5 +203,6 @@ openclaw agents bindings --json
 - 当前 Paperclip 控制面 agent：`qq-main`、`brain-secretary-dev`、`brain-secretary-review`
 - 当前 OpenClaw gateway session key 固定为：`agent:<openclaw_agent_id>:paperclip`
 - `qq-main` 只要调用了子 agent，自动投影服务就会把协同过程镜像成 Paperclip 父子 issue
+- 当前已新增项目 24 小时自动进化守护：按 `ops/auto-evolve.json` 周期性驱动 `qq-main` 主动巡检项目，并强制只在 agent 分支工作
 - 投影 issue 默认不分配 assignee，只用于网页观战，避免在 Paperclip 里重复执行
 - 投影服务会忽略 Paperclip 自身 wake event，避免递归回灌

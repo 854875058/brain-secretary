@@ -248,6 +248,11 @@ python3 scripts/qq_bot_multi.py restart --json
 
 - 文档：`docs/project-sync-branch-workflow.md`
 - 双轨同步脚本：`scripts/project_sync.py`
+- 双轨配置：`ops/project-sync.json`
+- 自动进化配置：`ops/auto-evolve.json`
+- 自动进化守护脚本：`scripts/project_auto_evolve_daemon.py`
+- 自动进化安装脚本：`scripts/project_auto_evolve_apply.sh`
+- 主分支保护脚本：`scripts/git_branch_guard.py`
 - Windows 自动跟踪脚本：`scripts/windows_project_autosync.ps1`
 - Windows 双击入口：`scripts/windows_project_autosync.bat`
 - 示例配置：`ops/project-sync.example.json`
@@ -261,6 +266,21 @@ python3 scripts/project_sync.py prepare-agent --config ops/project-sync.json --p
 python3 scripts/project_sync.py sync-agent --config ops/project-sync.json --project multimodal-retrieval
 python3 scripts/project_sync.py review-agent --config ops/project-sync.json --project multimodal-retrieval
 python3 scripts/project_sync.py promote-agent --config ops/project-sync.json --project multimodal-retrieval
+
+如果你想让服务器上的 `qq-main` 24 小时自动给某个项目找活 / 改代码 / 验收下一轮，可以再启用：
+
+```bash
+python3 scripts/project_auto_evolve_daemon.py status --json
+python3 scripts/project_auto_evolve_daemon.py once --project tower-eye --json
+bash scripts/project_auto_evolve_apply.sh
+```
+
+当前现成示例已经为 `Tower-Eye` 配好：
+
+- 仓库目录：`/root/projects/Tower-Eye`
+- 稳定分支：`main`（受保护，不允许自动提交/推送）
+- work 分支：`work/tower-eye`
+- 夜间 agent 分支：`agent/tower-eye`
 ```
 
 Windows 如果不想手动 pull，可直接跑：

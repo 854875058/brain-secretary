@@ -53,6 +53,7 @@
 - `openclaw-model-proxy.service`
 - `openclaw-gateway.service`
 - `openclaw-paperclip-projection.service`
+- `openclaw-project-auto-evolve.service`
 - `nginx.service`
 
 全部使用：
@@ -122,6 +123,9 @@ ss -lntp | rg ':80 |:18789 '
 - OpenClaw 配置：`/root/.openclaw/openclaw.json`
 - 脑 workspace：`/root/.openclaw/workspace`
 - 运维真源：`/root/brain-secretary/ops/deployment_manifest.json`
+- 项目注册表：`/root/brain-secretary/ops/project_registry.json`
+- 自动进化配置：`/root/brain-secretary/ops/auto-evolve.json`
+- 双轨分支配置：`/root/brain-secretary/ops/project-sync.json`
 - 项目注册表：`/root/brain-secretary/ops/project_registry.json`
 - QQ Bot 插件目录：`/root/.openclaw/extensions/qqbot`
 - 当前插件来源：`@openclaw-china/qqbot`（npm）
@@ -257,6 +261,9 @@ python3 scripts/napcat_multi.py qr --json
 - `agent/<project>`：晚上 agent 分支
 - 文档：`docs/project-sync-branch-workflow.md`
 - 双轨同步脚本：`scripts/project_sync.py`
+- 自动进化守护脚本：`scripts/project_auto_evolve_daemon.py`
+- 自动进化安装脚本：`scripts/project_auto_evolve_apply.sh`
+- 主分支保护脚本：`scripts/git_branch_guard.py`
 - 项目注册表脚本：`scripts/project_registry.py`
 - Windows 自动跟踪脚本：`scripts/windows_project_autosync.ps1`
 - Windows 自动跟踪批处理：`scripts/windows_project_autosync.bat`
@@ -278,7 +285,9 @@ python3 scripts/napcat_multi.py qr --json
 
 - 命中 `ops/project_registry.json` 的项目时，不要先向用户追问路径/仓库。
 - 当前稳定映射：用户说“铁塔 / 铁塔项目 / 铁塔多模态检索”时，默认指 `https://github.com/854875058/Tower-Eye`。
+- `Tower-Eye` 现已落盘到 `/root/projects/Tower-Eye`，双轨分支固定为 `work/tower-eye` + `agent/tower-eye`，并对 `main` 安装了提交/推送保护。
 - 对缺依赖、缺测试工具、仓库未克隆这类可恢复阻塞，默认由内部技术链路自己补齐；验收发现问题后，大脑应自动打回技术号继续修。
+- 夜间自动进化由 `openclaw-project-auto-evolve.service` 常驻驱动，默认只在 `agent/tower-eye` 上找活、改动、验收、提交。
 
 
 ## Paperclip 当前状态

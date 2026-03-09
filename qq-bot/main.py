@@ -83,7 +83,7 @@ OPENCLAW_ENABLED = bool(openclaw_cfg.get("enabled", True))
 OPENCLAW_PROMPT_PREFIX = str(openclaw_cfg.get("prompt_prefix", "") or "").strip()
 openclaw = OpenClawClient(
     agent_id=openclaw_cfg.get("agent_id", ""),
-    thinking=openclaw_cfg.get("thinking", "minimal"),
+    thinking=openclaw_cfg.get("thinking", "low"),
     timeout_seconds=openclaw_cfg.get("timeout_seconds", 600),
 )
 

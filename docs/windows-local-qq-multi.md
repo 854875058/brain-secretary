@@ -212,7 +212,7 @@ powershell -ExecutionPolicy Bypass -File scripts/windows_local_qq_doctor.ps1 `
 ```bash
 openclaw agent --agent qq-main --session-id qq-main-routing-check \
   --message '现在只回答这一行：工程实施->哪个agent；方案验收->哪个agent' \
-  --thinking minimal --timeout 45 --json
+  --thinking low --timeout 45 --json
 ```
 
 预期：

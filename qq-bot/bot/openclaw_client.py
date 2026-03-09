@@ -6,6 +6,9 @@ from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
 
+VALID_THINKING_LEVELS = {'low', 'medium', 'high', 'xhigh'}
+THINKING_ALIASES = {'minimal': 'low'}
+
 
 class OpenClawError(RuntimeError):
     pass
@@ -22,17 +25,27 @@ class OpenClawClient:
     def __init__(
         self,
         agent_id: str = "",
-        thinking: str = "minimal",
+        thinking: str = "low",
         timeout_seconds: int = 600,
         openclaw_bin: str = "openclaw",
     ):
         self.agent_id = (agent_id or "").strip()
-        self.thinking = (thinking or "").strip() or "minimal"
+        self.thinking = self._normalize_thinking(thinking)
         self.timeout_seconds = int(timeout_seconds or 600)
         self.openclaw_bin = openclaw_bin
 
         self._locks = {}
         self._locks_guard = asyncio.Lock()
+
+    @staticmethod
+    def _normalize_thinking(value: str | None) -> str:
+        normalized = str(value or '').strip().lower()
+        normalized = THINKING_ALIASES.get(normalized, normalized)
+        if normalized in VALID_THINKING_LEVELS:
+            return normalized
+        if normalized:
+            logger.warning('OpenClaw thinking level %r 不受支持，已回退为 low', value)
+        return 'low'
 
     async def _get_lock(self, session_id: str) -> asyncio.Lock:
         async with self._locks_guard:

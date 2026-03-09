@@ -75,6 +75,8 @@ def load_project_registry(path: str | Path | None = None) -> list[dict[str, Any]
                 'repo_url': str(item.get('repo_url') or '').strip(),
                 'default_branch': str(item.get('default_branch') or 'main').strip() or 'main',
                 'preferred_work_branch': str(item.get('preferred_work_branch') or '').strip(),
+                'work_branch': str(item.get('work_branch') or '').strip(),
+                'agent_branch': str(item.get('agent_branch') or '').strip(),
                 'local_paths': local_paths,
                 'notes': str(item.get('notes') or '').strip(),
             }
@@ -165,6 +167,10 @@ def build_project_registry_context(message: str, limit: int = 3, path: str | Pat
             lines.append(f"  - 默认分支: {project['default_branch']}")
         if project.get('preferred_work_branch'):
             lines.append(f"  - 首选工作分支: {project['preferred_work_branch']}")
+        if project.get('work_branch'):
+            lines.append(f"  - 白天 work 分支: {project['work_branch']}")
+        if project.get('agent_branch'):
+            lines.append(f"  - 夜间 agent 分支: {project['agent_branch']}")
         if local_paths:
             lines.append(f"  - 本地路径候选: {'；'.join(local_paths)}")
         if project.get('notes'):
@@ -192,6 +198,10 @@ def render_registry_markdown(path: str | Path | None = None) -> str:
             lines.append(f"- 默认分支：`{project['default_branch']}`")
         if project.get('preferred_work_branch'):
             lines.append(f"- 首选工作分支：`{project['preferred_work_branch']}`")
+        if project.get('work_branch'):
+            lines.append(f"- 白天 work 分支：`{project['work_branch']}`")
+        if project.get('agent_branch'):
+            lines.append(f"- 夜间 agent 分支：`{project['agent_branch']}`")
         local_paths = project.get('local_paths') or []
         if local_paths:
             lines.append('- 本地路径候选：')

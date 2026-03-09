@@ -21,6 +21,7 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents -> qq-main -> QQ Bot -
 - `nginx` 监听公网 `http://110.41.170.155:80/`，把 `/` 代理到 OpenClaw 内部 `127.0.0.1:18789`
 - `paperclip.service` 作为 system service 运行在 `127.0.0.1:3110`
 - `openclaw-paperclip-projection.service` 作为 systemd user service，持续把 `qq-main` 子 agent 协同投影到 Paperclip
+- `openclaw-project-auto-evolve.service` 作为 systemd user service，周期性驱动 `qq-main` 对注册项目执行 24 小时自动进化
 - `nginx` 在 `http://110.41.170.155/paperclip/` 提供 Paperclip viewer，并加 basic auth
 - `nginx` 仍保留 `http://110.41.170.155:3100/` 直连监听，但当前云侧端口未放行，公网通常超时
 - 历史 `qq-bot(FastAPI Bridge)` / `NapCat` 链路已退役，相关 systemd 服务已停用
@@ -35,6 +36,7 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents -> qq-main -> QQ Bot -
 | OpenClaw Gateway | `openclaw-gateway.service` | OpenClaw 主网关 + `qqbot` 渠道 | `18789` |
 | Paperclip | `paperclip.service` | Paperclip 控制面 / issue / heartbeat | `3110` |
 | Projection | `openclaw-paperclip-projection.service` | 自动投影 `qq-main` 子 agent 协同到 Paperclip | - |
+| Auto Evolve | `openclaw-project-auto-evolve.service` | 周期性驱动 `qq-main` 在 agent 分支上自动巡检/改进项目 | - |
 | Public Proxy | `nginx.service` | OpenClaw 根路径 + Paperclip `/paperclip/` + 3100 直连 | `80`, `3100` |
 
 ### 已退役服务
@@ -55,6 +57,7 @@ python3 scripts/ops_manager.py restart backend
 python3 scripts/ops_manager.py restart public_proxy
 python3 scripts/ops_manager.py logs gateway -n 80
 python3 scripts/ops_manager.py logs paperclip_projection -n 80
+python3 scripts/ops_manager.py logs project_auto_evolve -n 80
 systemctl status paperclip.service
 openclaw channels list
 openclaw agents bindings --json
@@ -243,7 +246,7 @@ openclaw agents bind --agent qq-main --bind qqbot:default
 ```bash
 systemctl --user status openclaw-model-proxy.service --no-pager -n 40
 curl -sS http://127.0.0.1:18080/healthz
-openclaw agent --agent qq-main --session-id qq-main-recover-test --message '只回复一个字：到' --thinking minimal --timeout 45 --json
+openclaw agent --agent qq-main --session-id qq-main-recover-test --message '只回复一个字：到' --thinking low --timeout 45 --json
 ```
 
 如果这里卡住，优先看 `/root/.openclaw/model-proxy.mjs` 是否仍会：

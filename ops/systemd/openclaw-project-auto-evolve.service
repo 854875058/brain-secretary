@@ -1,0 +1,15 @@
+[Unit]
+Description=OpenClaw Project Auto Evolution Daemon
+After=network.target openclaw-gateway.service
+Wants=openclaw-gateway.service
+
+[Service]
+Type=simple
+WorkingDirectory=/root/brain-secretary
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/bash -lc 'exec /usr/bin/python3 /root/brain-secretary/scripts/project_auto_evolve_daemon.py watch --config /root/brain-secretary/ops/auto-evolve.json --sync-config /root/brain-secretary/ops/project-sync.json --poll-seconds ${AUTO_EVOLVE_POLL_SECONDS:-120}'
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

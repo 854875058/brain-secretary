@@ -1,0 +1,13 @@
+{
+  "projects": [
+    {
+      "name": "tower-eye",
+      "path": "/root/projects/Tower-Eye",
+      "remote": "origin",
+      "stable_branch": "main",
+      "work_branch": "work/tower-eye",
+      "agent_branch": "agent/tower-eye",
+      "pull_rebase": true
+    }
+  ]
+}

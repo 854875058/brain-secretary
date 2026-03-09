@@ -14,6 +14,7 @@
 - `main`：稳定分支
 - `work/<project>`：你白天、本地 AI 的日常开发分支
 - `agent/<project>`：晚上服务器上的大脑 / 方案 / 技术 agent 的单独工作分支
+- 如果要做 24 小时自动进化，守护进程也只允许在 `agent/<project>` 工作，不能直接碰 `main`
 
 推荐命名示例：
 
@@ -57,6 +58,8 @@
 - Windows 自动跟踪脚本：`scripts/windows_project_autosync.ps1`
 - Windows 双击入口：`scripts/windows_project_autosync.bat`
 - 示例配置：`ops/project-sync.example.json`
+- 现网示例配置：`ops/project-sync.json`
+- 自动进化配置：`ops/auto-evolve.json`
 
 `project_sync.py` 现在支持这些动作：
 
@@ -204,6 +207,22 @@ python3 scripts/project_sync.py prepare-agent --config ops/project-sync.json --p
 - 再切到 `agent/multimodal-retrieval`
 - 如果 agent 分支不存在，就从 work 分支创建
 - 如果 agent 分支存在，就拉远端并把最新 work 分支并进来
+
+### 2) 让 agent 干活
+
+如果你不想手工每晚触发，也可以直接开守护：
+
+```bash
+python3 scripts/project_auto_evolve_daemon.py once --project tower-eye --json
+bash scripts/project_auto_evolve_apply.sh
+```
+
+它会自动：
+
+- 先准备 `work/<project>` 和 `agent/<project>`
+- 确保主分支（如 `main`）被保护，不允许自动提交/推送
+- 驱动 `qq-main` 自己找活、派技术号、拉验收号、自动返工
+- 最终只把改动落到 `agent/<project>`
 
 ### 2) 让 agent 干活
 

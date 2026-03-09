@@ -1,7 +1,7 @@
 {
   "project": {
     "name": "Brain Secretary",
-    "service_chain": "QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> child agents -> Paperclip control plane + projection",
+    "service_chain": "QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> child agents -> auto evolve daemon -> Paperclip control plane + projection",
     "repo_root": ".",
     "primary_docs": {
       "handover": "HANDOVER.md",
@@ -9,7 +9,14 @@
       "systemd_ops": "docs/systemd-ops.md",
       "claude_rules": "CLAUDE.md",
       "project_sync": "docs/project-sync-branch-workflow.md"
-    }
+    },
+    "project_sync_config": "ops/project-sync.json",
+    "project_registry": "ops/project_registry.json",
+    "auto_evolve_config": "ops/auto-evolve.json",
+    "auto_evolve_daemon_script": "scripts/project_auto_evolve_daemon.py",
+    "auto_evolve_apply_script": "scripts/project_auto_evolve_apply.sh",
+    "auto_evolve_systemd_unit": "ops/systemd/openclaw-project-auto-evolve.service",
+    "branch_guard_script": "scripts/git_branch_guard.py"
   },
   "models": {
     "primary_brain": {
@@ -81,7 +88,7 @@
   },
   "platforms": {
     "linux": {
-      "deployment_mode": "systemd-user(OpenClaw + projection) + systemd(Paperclip) + system-nginx + OpenClaw qqbot channel",
+      "deployment_mode": "systemd-user(OpenClaw + projection + auto-evolve) + systemd(Paperclip) + system-nginx + OpenClaw qqbot channel",
       "groups": {
         "frontend": [
           "public_proxy",
@@ -91,13 +98,15 @@
           "model_proxy",
           "gateway",
           "paperclip",
-          "paperclip_projection"
+          "paperclip_projection",
+          "project_auto_evolve"
         ],
         "all": [
           "model_proxy",
           "gateway",
           "paperclip",
           "paperclip_projection",
+          "project_auto_evolve",
           "public_proxy",
           "paperclip_public_proxy"
         ]
@@ -121,7 +130,11 @@
         "python3 scripts/paperclip_cli.py status --json",
         "bash scripts/paperclip_projection_apply.sh",
         "python3 scripts/paperclip_projection_daemon.py once --json",
-        "python3 scripts/ops_manager.py logs paperclip_projection -n 80"
+        "python3 scripts/ops_manager.py logs paperclip_projection -n 80",
+        "python3 scripts/project_auto_evolve_daemon.py status --json",
+        "python3 scripts/project_auto_evolve_daemon.py once --project tower-eye --json",
+        "bash scripts/project_auto_evolve_apply.sh",
+        "python3 scripts/ops_manager.py logs project_auto_evolve -n 80"
       ],
       "components": {
         "model_proxy": {
@@ -208,6 +221,12 @@
           "unit": "openclaw-paperclip-projection.service",
           "script": "/root/brain-secretary/scripts/paperclip_projection_daemon.py",
           "transcript_dir": "/root/.openclaw/agents/qq-main/sessions"
+        },
+        "project_auto_evolve": {
+          "unit": "openclaw-project-auto-evolve.service",
+          "script": "/root/brain-secretary/scripts/project_auto_evolve_daemon.py",
+          "config_path": "/root/brain-secretary/ops/auto-evolve.json",
+          "project_sync_config": "/root/brain-secretary/ops/project-sync.json"
         }
       },
       "extra_locations": {
@@ -412,6 +431,10 @@
     "paperclip_projection": {
       "label": "Paperclip Collaboration Projection",
       "description": "Auto-project qq-main subagent collaboration into read-only Paperclip parent/child issues"
+    },
+    "project_auto_evolve": {
+      "label": "Project Auto Evolution Daemon",
+      "description": "Continuously drives qq-main to evolve registered projects on agent branches only"
     }
   }
 }

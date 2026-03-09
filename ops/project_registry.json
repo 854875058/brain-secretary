@@ -15,7 +15,9 @@
       "local_paths": [
         "/root/brain-secretary"
       ],
-      "notes": "主协调仓库；涉及 OpenClaw、QQ、Paperclip、部署、文档、脚本时，默认先看这个仓库。"
+      "notes": "主协调仓库；涉及 OpenClaw、QQ、Paperclip、部署、文档、脚本时，默认先看这个仓库。",
+      "work_branch": "main",
+      "agent_branch": "main"
     },
     {
       "id": "tower-eye",
@@ -30,12 +32,14 @@
       ],
       "repo_url": "https://github.com/854875058/Tower-Eye",
       "default_branch": "main",
-      "preferred_work_branch": "feat/tower-eye-review-fix",
+      "preferred_work_branch": "agent/tower-eye",
       "local_paths": [
-        "/tmp/tower-eye-review-fix/repo",
-        "/root/projects/Tower-Eye"
+        "/root/projects/Tower-Eye",
+        "/tmp/tower-eye-review-fix/repo"
       ],
-      "notes": "用户口中的“铁塔多模态检索项目”默认指这个仓库。用户要求所有修改先进新分支，不要直接动 main。若正式落盘目录不存在，但服务器上 gh 已登录，可先用 gh/git 克隆到临时目录执行。"
+      "notes": "用户口中的“铁塔多模态检索项目”默认指这个仓库。24 小时自动进化统一走双轨：白天 `work/tower-eye`，夜间自动进化只准在 `agent/tower-eye`，严禁直接动 main。若正式目录不存在但服务器上 gh 已登录，可先自动克隆到 `/root/projects/Tower-Eye`。",
+      "work_branch": "work/tower-eye",
+      "agent_branch": "agent/tower-eye"
     }
   ]
 }

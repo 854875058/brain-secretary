@@ -1,0 +1,412 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import asyncio
+import json
+import logging
+import os
+import shlex
+import subprocess
+import sys
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parents[1]
+QQ_BOT_ROOT = ROOT / 'qq-bot'
+if str(QQ_BOT_ROOT) not in sys.path:
+    sys.path.insert(0, str(QQ_BOT_ROOT))
+
+from bot.openclaw_client import OpenClawClient, OpenClawError  # noqa: E402
+from bot.project_registry import load_project_registry  # noqa: E402
+from bot.task_db import get_bridge_state_value, init_db, set_bridge_state_value  # noqa: E402
+
+logger = logging.getLogger(__name__)
+DEFAULT_CONFIG_PATH = ROOT / 'ops' / 'auto-evolve.json'
+DEFAULT_SYNC_CONFIG_PATH = ROOT / 'ops' / 'project-sync.json'
+STATE_KEY = 'project_auto_evolve_v1'
+DEFAULT_AGENT_TIMEOUT_SECONDS = 3600
+
+
+class AutoEvolveError(RuntimeError):
+    pass
+
+
+def _now_iso() -> str:
+    return datetime.now().astimezone().isoformat()
+
+
+def _parse_iso(value: str | None) -> datetime | None:
+    raw = str(value or '').strip()
+    if not raw:
+        return None
+    try:
+        return datetime.fromisoformat(raw.replace('Z', '+00:00'))
+    except Exception:
+        return None
+
+
+def _run_command(cmd: list[str], *, cwd: Path | None = None, check: bool = True, timeout: int = 1800) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(cmd, cwd=str(cwd or ROOT), text=True, capture_output=True, check=check, timeout=timeout)
+
+
+def _run_json(cmd: list[str], *, cwd: Path | None = None, timeout: int = 1800) -> Any:
+    result = _run_command(cmd, cwd=cwd, timeout=timeout)
+    output = (result.stdout or '').strip()
+    return json.loads(output) if output else None
+
+
+def _github_repo_spec(repo_url: str) -> str:
+    text = str(repo_url or '').strip().rstrip('/')
+    marker = 'github.com/'
+    if marker not in text:
+        raise AutoEvolveError(f'不支持的 GitHub 地址: {repo_url}')
+    return text.split(marker, 1)[1]
+
+
+def _load_auto_config(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        raise AutoEvolveError(f'自动进化配置不存在: {path}')
+    payload = json.loads(path.read_text(encoding='utf-8'))
+    projects = payload.get('projects') if isinstance(payload, dict) else None
+    if not isinstance(projects, list) or not projects:
+        raise AutoEvolveError('自动进化配置里至少需要一个 projects 项')
+    normalized: list[dict[str, Any]] = []
+    for item in projects:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get('name') or '').strip()
+        if not name:
+            continue
+        normalized.append(
+            {
+                'name': name,
+                'enabled': bool(item.get('enabled', True)),
+                'registry_project': str(item.get('registry_project') or name).strip() or name,
+                'sync_project': str(item.get('sync_project') or name).strip() or name,
+                'session_id': str(item.get('session_id') or f'auto-evolve:{name}').strip(),
+                'interval_minutes': max(5, int(item.get('interval_minutes') or 45)),
+                'timeout_seconds': max(120, int(item.get('timeout_seconds') or DEFAULT_AGENT_TIMEOUT_SECONDS)),
+                'thinking': str(item.get('thinking') or 'low').strip() or 'low',
+                'protected_branches': [str(branch).strip() for branch in (item.get('protected_branches') or ['main']) if str(branch).strip()],
+                'goal': str(item.get('goal') or '').strip(),
+                'validation_hint': str(item.get('validation_hint') or '').strip(),
+                'commit_prefix': str(item.get('commit_prefix') or 'chore: 夜间自动进化').strip(),
+            }
+        )
+    if not normalized:
+        raise AutoEvolveError('自动进化配置没有有效 project')
+    return normalized
+
+
+def _load_project_sync_map(path: Path) -> dict[str, dict[str, Any]]:
+    if not path.exists():
+        raise AutoEvolveError(f'项目双轨配置不存在: {path}')
+    payload = json.loads(path.read_text(encoding='utf-8'))
+    projects = payload.get('projects') if isinstance(payload, dict) else None
+    if not isinstance(projects, list):
+        raise AutoEvolveError(f'项目双轨配置格式错误: {path}')
+    mapping: dict[str, dict[str, Any]] = {}
+    for item in projects:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get('name') or '').strip()
+        if not name:
+            continue
+        mapping[name] = item
+    return mapping
+
+
+def _load_registry_map() -> dict[str, dict[str, Any]]:
+    mapping: dict[str, dict[str, Any]] = {}
+    for item in load_project_registry():
+        name = str(item.get('name') or '').strip()
+        if name:
+            mapping[name] = item
+        for alias in item.get('aliases') or []:
+            normalized = str(alias).strip()
+            if normalized:
+                mapping.setdefault(normalized, item)
+    return mapping
+
+
+def _clean_state(raw: Any) -> dict[str, Any]:
+    if not isinstance(raw, dict):
+        return {'version': 1, 'projects': {}}
+    cleaned = dict(raw)
+    cleaned.pop('_db_updated_at', None)
+    cleaned.setdefault('version', 1)
+    cleaned.setdefault('projects', {})
+    return cleaned
+
+
+def _ensure_project_checkout(sync_item: dict[str, Any], registry_item: dict[str, Any]) -> Path:
+    repo_path = Path(str(sync_item.get('path') or '')).expanduser()
+    if (repo_path / '.git').exists():
+        return repo_path
+    repo_path.parent.mkdir(parents=True, exist_ok=True)
+    repo_url = str(registry_item.get('repo_url') or '').strip()
+    if not repo_url:
+        raise AutoEvolveError(f"{sync_item.get('name')} 缺少 repo_url，无法自动克隆")
+    gh_spec = _github_repo_spec(repo_url)
+    logger.info('项目不存在，开始克隆: %s -> %s', gh_spec, repo_path)
+    try:
+        _run_command(['gh', 'repo', 'clone', gh_spec, str(repo_path)], timeout=3600)
+    except Exception:
+        _run_command(['git', 'clone', repo_url, str(repo_path)], timeout=3600)
+    return repo_path
+
+
+def _install_branch_guard(repo_path: Path, protected_branches: list[str]) -> dict[str, Any]:
+    cmd = [sys.executable, str(ROOT / 'scripts' / 'git_branch_guard.py'), 'install', '--repo', str(repo_path), '--json']
+    for branch in protected_branches:
+        cmd.extend(['--protected', branch])
+    return _run_json(cmd, timeout=300) or {}
+
+
+def _project_sync(action: str, project_name: str, sync_config: Path, extra_args: list[str] | None = None, timeout: int = 3600) -> Any:
+    cmd = [sys.executable, str(ROOT / 'scripts' / 'project_sync.py'), action, '--config', str(sync_config), '--project', project_name, '--json']
+    if extra_args:
+        cmd.extend(extra_args)
+    return _run_json(cmd, timeout=timeout)
+
+
+def _build_cycle_prompt(project_cfg: dict[str, Any], sync_item: dict[str, Any], registry_item: dict[str, Any], previous_state: dict[str, Any] | None = None) -> str:
+    repo_path = str(sync_item.get('path') or '').strip()
+    project_name = str(registry_item.get('name') or project_cfg['name']).strip()
+    repo_url = str(registry_item.get('repo_url') or '').strip()
+    work_branch = str(sync_item.get('work_branch') or '').strip()
+    agent_branch = str(sync_item.get('agent_branch') or '').strip()
+    stable_branch = str(sync_item.get('stable_branch') or 'main').strip() or 'main'
+    goal = str(project_cfg.get('goal') or '').strip() or '持续寻找高价值、低风险、可验证的小步改进。'
+    validation_hint = str(project_cfg.get('validation_hint') or '').strip()
+    prior_summary = str((previous_state or {}).get('last_summary') or '').strip()
+    prior_outcome = str((previous_state or {}).get('last_outcome') or '').strip()
+    prior_commit = str((previous_state or {}).get('last_commit') or '').strip()
+
+    lines = [
+        '这是一次【24 小时自动进化守护周期】。',
+        '你现在不是等用户下命令，而是在无人值守模式下，主动为项目寻找可落地的小步改进。',
+        '',
+        f'项目: {project_name}',
+        f'仓库: {repo_url}',
+        f'本地仓库路径: {repo_path}',
+        f'稳定分支(禁止提交/推送): {stable_branch}',
+        f'白天工作分支: {work_branch}',
+        f'夜间 agent 分支: {agent_branch}',
+        '',
+        '硬约束:',
+        f'- 绝对不要向 `{stable_branch}` 提交、合并或推送；所有实际改动只允许落在 `{agent_branch}`。',
+        '- 遇到缺依赖、缺测试工具、仓库未克隆、默认分支未确认、缺 `rg` 等可恢复阻塞时，先自己补环境、换工具、继续推进，不要把这些先甩给用户。',
+        '- 这轮必须按“大脑 -> 技术号 -> 验收号 -> 若有问题再打回技术号”的闭环推进，至少完成一轮真实复核。',
+        '- 如果验收指出问题、测试失败或实现不完整，大脑要自动带着 blocker 再派技术号修，不要把返工交给用户。',
+        '- 只有在确实缺账号授权、验证码、业务取舍或用户专属偏好时，才允许停止并对外报阻塞。',
+        '',
+        '本轮目标:',
+        f'- {goal}',
+        '- 主动自己找活：优先处理明确 bug、测试失败、工程稳定性问题、依赖/脚本问题、低风险文档/配置改进。',
+        '- 优先选择 1 个高价值、低风险、可验证的改动；不要一轮铺太大。',
+        '- 如果这轮已经完成实现，但补依赖 / 跑 pytest / 前端 build 会明显拖长时长，优先拆成“实现回合”和“验证回合”，不要为了等全量验证把整轮跑到超时。',
+    ]
+    if validation_hint:
+        lines.extend(['', '验证要求:', f'- {validation_hint}'])
+    if prior_summary or prior_outcome or prior_commit:
+        lines.extend([
+            '',
+            '上一轮上下文:',
+            f'- 上轮结论: {prior_outcome or "(无)"}',
+            f'- 上轮摘要: {prior_summary or "(无)"}',
+            f'- 上轮 commit: {prior_commit or "(无)"}',
+            '- 这轮如果还有未解决项，优先接着推进，不要从头乱找。',
+        ])
+    lines.extend([
+        '',
+        '最终输出要求（中文）:',
+        '1. 先写本轮找到的活和最终结论。',
+        '2. 写清技术号做了什么、验收号发现了什么、是否发生返工。',
+        '3. 写清改动文件、验证动作、剩余风险。',
+        '4. 如果有实际提交，写 commit hash、当前分支、push 结果。',
+        '5. 如果这轮没有安全改动可提交，也要给出下一轮优先项，别空转。',
+    ])
+    return '\n'.join(lines).strip()
+
+
+def _extract_commit_hash(reply_text: str) -> str | None:
+    for token in str(reply_text or '').split():
+        cleaned = token.strip('`[]()<>.,;:')
+        if len(cleaned) >= 7 and len(cleaned) <= 40 and all(char in '0123456789abcdef' for char in cleaned.lower()):
+            return cleaned
+    return None
+
+
+async def run_project_cycle(project_cfg: dict[str, Any], *, sync_config: Path, dry_run: bool = False) -> dict[str, Any]:
+    sync_map = _load_project_sync_map(sync_config)
+    sync_item = sync_map.get(project_cfg['sync_project'])
+    if not sync_item:
+        raise AutoEvolveError(f"项目双轨配置里找不到 {project_cfg['sync_project']}")
+    registry_map = _load_registry_map()
+    registry_item = registry_map.get(project_cfg['registry_project'])
+    if not registry_item:
+        raise AutoEvolveError(f"项目注册表里找不到 {project_cfg['registry_project']}")
+
+    repo_path = _ensure_project_checkout(sync_item, registry_item)
+    guard_info = _install_branch_guard(repo_path, project_cfg.get('protected_branches') or ['main'])
+    prepare_record = _project_sync('prepare-agent', project_cfg['sync_project'], sync_config, timeout=3600)
+    _project_sync('sync-work', project_cfg['sync_project'], sync_config, timeout=3600)
+    _project_sync('sync-agent', project_cfg['sync_project'], sync_config, timeout=3600)
+
+    await init_db()
+    state = _clean_state(await get_bridge_state_value(STATE_KEY))
+    project_state = dict((state.get('projects') or {}).get(project_cfg['name']) or {})
+    prompt = _build_cycle_prompt(project_cfg, sync_item, registry_item, previous_state=project_state)
+
+    result: dict[str, Any] = {
+        'project': project_cfg['name'],
+        'repo_path': str(repo_path),
+        'session_id': project_cfg['session_id'],
+        'guard': guard_info,
+        'prepared': prepare_record,
+        'dry_run': dry_run,
+        'started_at': _now_iso(),
+    }
+    if dry_run:
+        result['prompt_preview'] = prompt
+        return result
+
+    client = OpenClawClient(
+        agent_id='qq-main',
+        thinking=project_cfg.get('thinking') or 'low',
+        timeout_seconds=int(project_cfg.get('timeout_seconds') or DEFAULT_AGENT_TIMEOUT_SECONDS),
+    )
+    try:
+        turn = await client.agent_turn_result(project_cfg['session_id'], prompt)
+        reply_text = str(turn.text or '').strip()
+        auto_sync_record = _project_sync(
+            'sync-agent',
+            project_cfg['sync_project'],
+            sync_config,
+            extra_args=['--commit', f"{project_cfg.get('commit_prefix') or 'chore: 夜间自动进化'} {datetime.now().strftime('%Y-%m-%d %H:%M')}"] ,
+            timeout=3600,
+        )
+        project_state.update(
+            {
+                'last_started_at': result['started_at'],
+                'last_finished_at': _now_iso(),
+                'last_summary': reply_text[:4000],
+                'last_outcome': reply_text.splitlines()[0].strip() if reply_text else '（无）',
+                'last_commit': _extract_commit_hash(reply_text) or '',
+                'last_status': 'ok',
+                'last_error': '',
+            }
+        )
+        state.setdefault('projects', {})[project_cfg['name']] = project_state
+        await set_bridge_state_value(STATE_KEY, state)
+        result['reply_text'] = reply_text
+        result['auto_sync'] = auto_sync_record
+        result['finished_at'] = project_state['last_finished_at']
+        result['status'] = 'ok'
+    except OpenClawError as exc:
+        project_state.update(
+            {
+                'last_started_at': result['started_at'],
+                'last_finished_at': _now_iso(),
+                'last_status': 'error',
+                'last_error': str(exc),
+            }
+        )
+        state.setdefault('projects', {})[project_cfg['name']] = project_state
+        await set_bridge_state_value(STATE_KEY, state)
+        result['status'] = 'error'
+        result['error'] = str(exc)
+        result['finished_at'] = project_state['last_finished_at']
+    return result
+
+
+async def status_payload(config_path: Path) -> dict[str, Any]:
+    await init_db()
+    state = _clean_state(await get_bridge_state_value(STATE_KEY))
+    return {
+        'config_path': str(config_path),
+        'projects': _load_auto_config(config_path),
+        'state': state,
+    }
+
+
+async def watch_projects(config_path: Path, sync_config: Path, poll_seconds: int, dry_run: bool = False) -> None:
+    await init_db()
+    while True:
+        projects = [item for item in _load_auto_config(config_path) if item.get('enabled', True)]
+        state = _clean_state(await get_bridge_state_value(STATE_KEY))
+        project_state_map = state.setdefault('projects', {})
+        for project_cfg in projects:
+            project_state = dict(project_state_map.get(project_cfg['name']) or {})
+            last_finished = _parse_iso(project_state.get('last_finished_at'))
+            interval = timedelta(minutes=int(project_cfg.get('interval_minutes') or 45))
+            if last_finished is not None and datetime.now().astimezone() - last_finished < interval:
+                continue
+            try:
+                payload = await run_project_cycle(project_cfg, sync_config=sync_config, dry_run=dry_run)
+                logger.info('自动进化周期完成: %s', json.dumps(payload, ensure_ascii=False)[:4000])
+            except Exception as exc:
+                logger.exception('自动进化周期失败: project=%s err=%s', project_cfg['name'], exc)
+        await asyncio.sleep(max(30, int(poll_seconds)))
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description='项目 24 小时自动进化守护脚本')
+    parser.add_argument('action', choices=['status', 'once', 'watch'])
+    parser.add_argument('--config', default=str(DEFAULT_CONFIG_PATH), help='自动进化配置路径')
+    parser.add_argument('--sync-config', default=str(DEFAULT_SYNC_CONFIG_PATH), help='项目双轨配置路径')
+    parser.add_argument('--project', action='append', help='只运行指定项目')
+    parser.add_argument('--poll-seconds', type=int, default=120, help='watch 模式轮询间隔')
+    parser.add_argument('--dry-run', action='store_true', help='只预演，不真正调用 qq-main')
+    parser.add_argument('--json', action='store_true', help='JSON 输出')
+    return parser
+
+
+def _filter_projects(config_path: Path, selected: list[str] | None) -> list[dict[str, Any]]:
+    projects = _load_auto_config(config_path)
+    if not selected:
+        return projects
+    selected_set = {str(item).strip() for item in selected if str(item).strip()}
+    return [item for item in projects if item['name'] in selected_set]
+
+
+def main() -> int:
+    args = build_parser().parse_args()
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s - %(message)s')
+    config_path = Path(args.config).expanduser()
+    sync_config = Path(args.sync_config).expanduser()
+
+    if args.action == 'status':
+        payload = asyncio.run(status_payload(config_path))
+        print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    if args.action == 'once':
+        projects = _filter_projects(config_path, args.project)
+        payloads = [
+            asyncio.run(run_project_cycle(project_cfg, sync_config=sync_config, dry_run=args.dry_run))
+            for project_cfg in projects if project_cfg.get('enabled', True)
+        ]
+        if args.json:
+            print(json.dumps(payloads, ensure_ascii=False, indent=2))
+        else:
+            print(json.dumps(payloads, ensure_ascii=False, indent=2))
+        return 0
+
+    selected = {str(item).strip() for item in (args.project or []) if str(item).strip()}
+    if selected:
+        original_loader = _load_auto_config
+
+        def _filtered_loader(path: Path) -> list[dict[str, Any]]:
+            return [item for item in original_loader(path) if item['name'] in selected]
+
+        globals()['_load_auto_config'] = _filtered_loader
+    asyncio.run(watch_projects(config_path, sync_config, args.poll_seconds, dry_run=args.dry_run))
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

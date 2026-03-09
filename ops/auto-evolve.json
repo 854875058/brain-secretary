@@ -1,0 +1,20 @@
+{
+  "projects": [
+    {
+      "name": "tower-eye",
+      "enabled": true,
+      "registry_project": "Tower-Eye",
+      "sync_project": "tower-eye",
+      "session_id": "auto-evolve:tower-eye",
+      "interval_minutes": 45,
+      "timeout_seconds": 3600,
+      "thinking": "low",
+      "protected_branches": [
+        "main"
+      ],
+      "goal": "持续为铁塔多模态检索项目寻找高价值、低风险、可验证的小步改进，并只落到 agent 分支。",
+      "validation_hint": "优先跑项目已有测试或受影响模块的最小验证；若依赖缺失，先自己补最小环境再继续。",
+      "commit_prefix": "chore: 夜间自动进化"
+    }
+  ]
+}
