@@ -130,17 +130,48 @@ scripts\windows_project_autosync.bat multimodal-retrieval 120
 
 ## AI 自动提交约定
 
-提交说明建议统一使用中文，直接说明“这次提交改了什么”，推荐格式：`类型: 中文概述本次修改内容`。
+默认规则已经合并到本文件，统一以这里为准：
 
-例如：`fix: 修复 QQ Bot 请求超时后的连接复用问题`。
+- 只在 `/root/brain-secretary` 内改动。
+- 不提交 `/root/.openclaw/**`、本地密钥、运行态数据库、日志、收件箱、虚拟环境和现网私密配置。
+- 完成代码、脚本、文档或配置修改后，如果用户没有明确禁止，必须执行：
 
-后续让 AI 修改代码时，可以直接要求它遵循这条规则：
-
-```text
-改完后自动执行 bash scripts/git_sync.sh -m "<类型: 中文说明本次修改内容>"
+```bash
+bash scripts/git_sync.sh -m "<类型: 中文说明本次修改内容>"
 ```
 
-仓库里的 `AGENTS.md`、`CLAUDE.md`、`AI_AUTOCOMMIT.md` 等文件都已经补了这条约定，方便后续助手读取并执行。
+- 如果不确定提交说明，可直接执行：
+
+```bash
+bash scripts/git_sync.sh
+```
+
+推荐提交格式：`类型: 中文概述本次修改内容`
+
+- `feat: 新增群聊媒体回复能力`
+- `fix: 修复 qq-bot 运行路径依赖`
+- `docs: 更新 GitHub 自动提交流程说明`
+- `refactor: 合并私聊和群聊 AI 回复链路`
+- `ops: 调整部署巡检脚本输出`
+- `chore: 同步本次杂项维护`
+
+开始工作前可快速检查：
+
+```bash
+git status --short --branch
+git config --bool --get brain.autopush
+git remote -v
+```
+
+完成提交后可快速检查：
+
+```bash
+git log --oneline -n 1
+git status --short --branch
+```
+
+
+仓库里的 `AGENTS.md`、`CLAUDE.md`、`docs/github-workflow.md` 等文件都已经补了这条约定，方便后续助手读取并执行。
 
 只要同时满足下面 3 个条件，就会接近“改完自动提交并推送”：
 

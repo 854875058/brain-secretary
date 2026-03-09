@@ -50,4 +50,4 @@
 - 完成代码或文档修改后，如果用户没有明确禁止，必须执行：`bash scripts/git_sync.sh -m "<类型: 中文说明本次修改内容>"`
 - 是否自动推送由仓库配置 `brain.autopush` 控制；开启后 post-commit hook 会自动尝试推送 `origin`。
 - 账号、远端、代理、hook 初始化优先使用：`bash scripts/git_bootstrap.sh`
-- 对不读取 `AGENTS.md` 的工具，补充说明见：`AI_AUTOCOMMIT.md`、`.github/copilot-instructions.md`、`.cursorrules`
+- 对不读取 `AGENTS.md` 的工具，补充说明见：`docs/github-workflow.md`、`.github/copilot-instructions.md`、`.cursorrules`

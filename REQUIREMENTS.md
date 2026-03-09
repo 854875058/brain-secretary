@@ -85,7 +85,7 @@
 ### P0（立即）
 - [ ] QQ → OpenClaw 调用链路跑通（私聊、群聊@）
 - [ ] 会话 `session-id` 设计并固化
-- [ ] 补齐 OpenClaw 工作区 bootstrap 文件：`SOUL.md`、`IDENTITY.md`、`USER.md`、`TOOLS.md`、`MEMORY.md`
+- [ ] 补齐 OpenClaw 工作区 bootstrap 文件：`SOUL.md`、`IDENTITY.md`、`OPERATING_PROFILE.md`、`MEMORY.md`
 
 ### P1（很快）
 - [ ] 大脑路由：把不同类型任务分发到子 Agent（至少“项目修复/转换/爬虫/RAG”四类）

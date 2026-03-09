@@ -59,7 +59,7 @@ brain-secretary/
 ├── CLAUDE.md
 ├── HANDOVER.md
 ├── AGENTS.md
-├── TOOLS.md
+├── OPERATING_PROFILE.md
 ├── brain/
 ├── agents/
 ├── qq-bot/
@@ -97,7 +97,8 @@ brain-secretary/
 - 想手工查看桥接层记忆 → `scripts/memory_center.py`
 - 想快速接手当前状态 → `HANDOVER.md`
 - 想看自动化维护规则 → `CLAUDE.md`
-- 想看 AI 自动提交约定 → `AI_AUTOCOMMIT.md`
+- 想看工作画像 / 用户偏好 / 常用工具 → `OPERATING_PROFILE.md`
 - 想配置 GitHub 仓库与自动提交 → `docs/github-workflow.md`
+- 历史阶段性专题文档 → `docs/archive/`
 - 想统一启停/状态/日志 → `scripts/ops_manager.py`
 - 想看部署真源 → `ops/deployment_manifest.json`
