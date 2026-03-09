@@ -10,7 +10,7 @@
 ```text
 QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents -> qq-main -> QQ Bot -> QQ
 
-可选控制面：Paperclip 内部运行在 `127.0.0.1:3110`，公网 viewer 经 `nginx` 暴露到 `3100`
+可选控制面：Paperclip 内部运行在 `127.0.0.1:3110`，公网优先经 `nginx` 的 `/paperclip/` 暴露（`:3100` 直连保留，但当前云侧端口未放行）
 ```
 
 说明：
@@ -19,7 +19,8 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents -> qq-main -> QQ Bot -
 - `qq-main` 负责理解用户意图、调度子 agent、验收结果、统一回复
 - `nginx` 监听公网 `http://110.41.170.155:80/`，把 `/` 代理到 OpenClaw 内部 `127.0.0.1:18789`
 - `paperclip.service` 作为 system service 运行在 `127.0.0.1:3110`
-- `nginx` 额外监听 `http://110.41.170.155:3100/`，反代到 Paperclip 并加 basic auth
+- `nginx` 在 `http://110.41.170.155/paperclip/` 提供 Paperclip viewer，并加 basic auth
+- `nginx` 仍保留 `http://110.41.170.155:3100/` 直连监听，但当前云侧端口未放行，公网通常超时
 - 历史 `qq-bot(FastAPI Bridge)` / `NapCat` 链路已退役，相关 systemd 服务已停用
 
 ---
@@ -31,7 +32,7 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents -> qq-main -> QQ Bot -
 | OpenClaw Model Proxy | `openclaw-model-proxy.service` | 模型代理 | - |
 | OpenClaw Gateway | `openclaw-gateway.service` | OpenClaw 主网关 + `qqbot` 渠道 | `18789` |
 | Paperclip | `paperclip.service` | Paperclip 控制面 / issue / heartbeat | `3110` |
-| Public Proxy | `nginx.service` | OpenClaw + Paperclip 公网反代 | `80`, `3100` |
+| Public Proxy | `nginx.service` | OpenClaw 根路径 + Paperclip `/paperclip/` + 3100 直连 | `80`, `3100` |
 
 ### 已退役服务
 
@@ -123,7 +124,7 @@ ss -lntp | rg ':80 |:3100 |:3110 |:18789 '
 ```bash
 curl http://127.0.0.1:18789/
 curl http://127.0.0.1:3110/api/health
-source /root/.config/brain-secretary/paperclip-viewer.env && curl -u "$PAPERCLIP_VIEWER_USER:$PAPERCLIP_VIEWER_PASSWORD" http://127.0.0.1:3100/api/health
+source /root/.config/brain-secretary/paperclip-viewer.env && curl -u "$PAPERCLIP_VIEWER_USER:$PAPERCLIP_VIEWER_PASSWORD" http://127.0.0.1/paperclip/api/health
 curl -I http://110.41.170.155/
 curl -I http://110.41.170.155/chat-history
 ```
@@ -263,7 +264,8 @@ systemctl --user status openclaw-qq-bridge.service napcat-qq.service
 - 运行目录：`/home/paperclip/paperclip`
 - 数据目录：`/home/paperclip/paperclip-data`
 - 内部 API：`127.0.0.1:3110`
-- 公网 viewer：`110.41.170.155:3100`
+- 公网 viewer：`110.41.170.155/paperclip/`
+- 直连 listener：`110.41.170.155:3100`（保留，但当前云侧端口未放行）
 - nginx 配置：`/etc/nginx/sites-available/paperclip-public.conf`
 - viewer 凭据：`/root/.config/brain-secretary/paperclip-viewer.env`
 

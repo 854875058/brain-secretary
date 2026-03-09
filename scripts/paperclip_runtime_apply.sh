@@ -3,6 +3,7 @@ set -euo pipefail
 
 PUBLIC_HOST="${PAPERCLIP_PUBLIC_HOST:-110.41.170.155}"
 PUBLIC_PORT="${PAPERCLIP_PUBLIC_PORT:-3100}"
+PUBLIC_BASE_PATH="${PAPERCLIP_PUBLIC_BASE_PATH:-/paperclip/}"
 INTERNAL_HOST="${PAPERCLIP_INTERNAL_HOST:-127.0.0.1}"
 INTERNAL_PORT="${PAPERCLIP_INTERNAL_PORT:-3110}"
 RUNTIME_USER="${PAPERCLIP_RUNTIME_USER:-paperclip}"
@@ -14,11 +15,15 @@ ENV_FILE="${PAPERCLIP_ENV_FILE:-$PAPERCLIP_DIR/.env.local}"
 SYSTEMD_UNIT_PATH="${PAPERCLIP_SYSTEMD_UNIT_PATH:-/etc/systemd/system/paperclip.service}"
 NGINX_CONF_PATH="${PAPERCLIP_NGINX_CONF_PATH:-/etc/nginx/sites-available/paperclip-public.conf}"
 NGINX_ENABLED_PATH="${PAPERCLIP_NGINX_ENABLED_PATH:-/etc/nginx/sites-enabled/paperclip-public.conf}"
+OPENCLAW_PUBLIC_NGINX_PATH="${PAPERCLIP_OPENCLAW_PUBLIC_NGINX_PATH:-/etc/nginx/sites-available/openclaw-public.conf}"
 VIEWER_ENV_FILE="${PAPERCLIP_VIEWER_ENV_FILE:-/root/.config/brain-secretary/paperclip-viewer.env}"
 HTPASSWD_PATH="${PAPERCLIP_HTPASSWD_PATH:-/etc/nginx/.paperclip_htpasswd}"
 VIEWER_USER="${PAPERCLIP_VIEWER_USER:-paperclip}"
 VIEWER_PASSWORD="${PAPERCLIP_VIEWER_PASSWORD:-}"
-PAPERCLIP_PUBLIC_URL="${PAPERCLIP_PUBLIC_URL:-http://$PUBLIC_HOST:$PUBLIC_PORT}"
+
+PUBLIC_BASE_PATH="/${PUBLIC_BASE_PATH#/}"
+PUBLIC_BASE_PATH="${PUBLIC_BASE_PATH%/}/"
+PAPERCLIP_PUBLIC_URL="${PAPERCLIP_PUBLIC_URL:-http://$PUBLIC_HOST${PUBLIC_BASE_PATH}}"
 
 if ! id -u "$RUNTIME_USER" >/dev/null 2>&1; then
   useradd -m -s /bin/bash "$RUNTIME_USER"
@@ -35,14 +40,16 @@ fi
 mkdir -p "$(dirname "$VIEWER_ENV_FILE")"
 install -d -o "$RUNTIME_USER" -g "$RUNTIME_GROUP" "$RUNTIME_HOME" "$PAPERCLIP_DIR" "$PAPERCLIP_HOME_DIR"
 
-python3 - "$ENV_FILE" "$INTERNAL_HOST" "$INTERNAL_PORT" "$PAPERCLIP_PUBLIC_URL" "$PAPERCLIP_HOME_DIR" <<'PY2'
+python3 - "$ENV_FILE" "$INTERNAL_HOST" "$INTERNAL_PORT" "$PAPERCLIP_PUBLIC_URL" "$PAPERCLIP_HOME_DIR" "$PUBLIC_BASE_PATH" <<'PY2'
 from pathlib import Path
 import sys
+
 path = Path(sys.argv[1])
 internal_host = sys.argv[2]
 internal_port = sys.argv[3]
 public_url = sys.argv[4]
 paperclip_home = sys.argv[5]
+public_base_path = sys.argv[6]
 existing = {}
 if path.exists():
     for line in path.read_text(encoding='utf-8').splitlines():
@@ -56,12 +63,13 @@ for key, value in {
     'PORT': internal_port,
     'PAPERCLIP_HOME': paperclip_home,
     'PAPERCLIP_PUBLIC_URL': public_url,
+    'PAPERCLIP_UI_BASE_PATH': public_base_path,
     'PAPERCLIP_DEPLOYMENT_MODE': 'local_trusted',
     'PAPERCLIP_DEPLOYMENT_EXPOSURE': 'private',
 }.items():
     existing[key] = value
 ordered = [
-    'HOST', 'PORT', 'PAPERCLIP_HOME', 'PAPERCLIP_PUBLIC_URL',
+    'HOST', 'PORT', 'PAPERCLIP_HOME', 'PAPERCLIP_PUBLIC_URL', 'PAPERCLIP_UI_BASE_PATH',
     'PAPERCLIP_DEPLOYMENT_MODE', 'PAPERCLIP_DEPLOYMENT_EXPOSURE', 'BETTER_AUTH_SECRET'
 ]
 lines = []
@@ -75,18 +83,17 @@ for key in sorted(existing):
     value = existing.get(key)
     if value is not None and str(value).strip() != '':
         lines.append(f'{key}={value}')
-path.write_text('
-'.join(lines) + '
-', encoding='utf-8')
+path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
 PY2
 
-python3 - "$PAPERCLIP_DIR" "$RUNTIME_USER" "$RUNTIME_GROUP" <<'PY2'
+python3 - "$PAPERCLIP_DIR" "$RUNTIME_USER" "$RUNTIME_GROUP" "$PUBLIC_BASE_PATH" <<'PY2'
 from pathlib import Path
 import io
 import json
 import os
 import pwd
 import grp
+import re
 import shutil
 import sys
 import tarfile
@@ -96,6 +103,7 @@ import urllib.request
 paperclip_dir = Path(sys.argv[1])
 runtime_user = sys.argv[2]
 runtime_group = sys.argv[3]
+public_base_path = sys.argv[4]
 server_pkg = paperclip_dir / 'server' / 'package.json'
 if not server_pkg.exists():
     raise SystemExit(f'missing server package.json: {server_pkg}')
@@ -115,6 +123,76 @@ with tempfile.TemporaryDirectory(prefix='paperclip-ui-dist-') as tmp:
     if dst.exists():
         shutil.rmtree(dst)
     shutil.copytree(src, dst)
+
+    index_path = dst / 'index.html'
+    index_html = index_path.read_text(encoding='utf-8')
+    js_match = re.search(r'src="(/assets/[^"]+\\.js)"', index_html)
+    if not js_match:
+        raise SystemExit('failed to locate Paperclip entry bundle in index.html')
+    bundle_rel = js_match.group(1)
+    bundle_path = dst / bundle_rel.lstrip('/')
+    if not bundle_path.exists():
+        raise SystemExit(f'entry bundle missing: {bundle_path}')
+
+    replacements = {
+        'href="/favicon.ico"': f'href="{public_base_path}favicon.ico"',
+        'href="/favicon.svg"': f'href="{public_base_path}favicon.svg"',
+        'href="/favicon-32x32.png"': f'href="{public_base_path}favicon-32x32.png"',
+        'href="/favicon-16x16.png"': f'href="{public_base_path}favicon-16x16.png"',
+        'href="/apple-touch-icon.png"': f'href="{public_base_path}apple-touch-icon.png"',
+        'href="/site.webmanifest"': f'href="{public_base_path}site.webmanifest"',
+        f'src="{bundle_rel}"': f'src="{public_base_path}{bundle_rel.lstrip('/')}"',
+    }
+    css_matches = re.findall(r'href="(/assets/[^"]+\\.css)"', index_html)
+    for css_rel in css_matches:
+        replacements[f'href="{css_rel}"'] = f'href="{public_base_path}{css_rel.lstrip('/')}"'
+    for old, new in replacements.items():
+        if old in index_html:
+            index_html = index_html.replace(old, new)
+    index_path.write_text(index_html, encoding='utf-8')
+
+    bundle = bundle_path.read_text(encoding='utf-8')
+    router_needle = 'c.jsx(oue,{children:'
+    if router_needle not in bundle:
+        raise SystemExit('failed to inject BrowserRouter basename into Paperclip bundle')
+    bundle = bundle.replace(router_needle, f'c.jsx(oue,{{basename:"{public_base_path.rstrip('/')}"'+',children:', 1)
+    bundle = bundle.replace('/api', f'{public_base_path.rstrip('/')}/api')
+    bundle_path.write_text(bundle, encoding='utf-8')
+
+    (dst / 'site.webmanifest').write_text(
+        '{\n'
+        '  "id": ".",\n'
+        '  "name": "Paperclip",\n'
+        '  "short_name": "Paperclip",\n'
+        '  "description": "AI-powered project management and agent coordination platform",\n'
+        '  "start_url": ".",\n'
+        '  "scope": ".",\n'
+        '  "display": "standalone",\n'
+        '  "orientation": "any",\n'
+        '  "theme_color": "#18181b",\n'
+        '  "background_color": "#18181b",\n'
+        '  "icons": [\n'
+        '    {\n'
+        '      "src": "android-chrome-192x192.png",\n'
+        '      "sizes": "192x192",\n'
+        '      "type": "image/png"\n'
+        '    },\n'
+        '    {\n'
+        '      "src": "android-chrome-512x512.png",\n'
+        '      "sizes": "512x512",\n'
+        '      "type": "image/png"\n'
+        '    },\n'
+        '    {\n'
+        '      "src": "android-chrome-512x512.png",\n'
+        '      "sizes": "512x512",\n'
+        '      "type": "image/png",\n'
+        '      "purpose": "maskable"\n'
+        '    }\n'
+        '  ]\n'
+        '}\n',
+        encoding='utf-8',
+    )
+
     uid = pwd.getpwnam(runtime_user).pw_uid
     gid = grp.getgrnam(runtime_group).gr_gid
     for root, dirs, files in os.walk(dst):
@@ -125,21 +203,20 @@ with tempfile.TemporaryDirectory(prefix='paperclip-ui-dist-') as tmp:
             os.chown(os.path.join(root, name), uid, gid)
 PY2
 
-cat > "$VIEWER_ENV_FILE" <<EOF
+cat > "$VIEWER_ENV_FILE" <<EOF2
 PAPERCLIP_VIEWER_URL=$PAPERCLIP_PUBLIC_URL
 PAPERCLIP_VIEWER_USER=$VIEWER_USER
 PAPERCLIP_VIEWER_PASSWORD=$VIEWER_PASSWORD
 PAPERCLIP_INTERNAL_URL=http://$INTERNAL_HOST:$INTERNAL_PORT
-EOF
+EOF2
 chmod 600 "$VIEWER_ENV_FILE"
 
 HASHED_PASSWORD="$(printf %s "$VIEWER_PASSWORD" | openssl passwd -apr1 -stdin)"
-printf '%s:%s
-' "$VIEWER_USER" "$HASHED_PASSWORD" > "$HTPASSWD_PATH"
+printf '%s:%s\n' "$VIEWER_USER" "$HASHED_PASSWORD" > "$HTPASSWD_PATH"
 chgrp www-data "$HTPASSWD_PATH"
 chmod 640 "$HTPASSWD_PATH"
 
-cat > "$SYSTEMD_UNIT_PATH" <<EOF
+cat > "$SYSTEMD_UNIT_PATH" <<EOF2
 [Unit]
 Description=Paperclip Service
 After=network.target
@@ -157,9 +234,9 @@ RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
-EOF
+EOF2
 
-cat > "$NGINX_CONF_PATH" <<EOF
+cat > "$NGINX_CONF_PATH" <<EOF2
 server {
     listen $PUBLIC_PORT;
     listen [::]:$PUBLIC_PORT;
@@ -183,8 +260,54 @@ server {
         proxy_set_header Connection "upgrade";
     }
 }
-EOF
+EOF2
 ln -sf "$NGINX_CONF_PATH" "$NGINX_ENABLED_PATH"
+
+python3 - "$OPENCLAW_PUBLIC_NGINX_PATH" "$HTPASSWD_PATH" "$INTERNAL_HOST" "$INTERNAL_PORT" "$PUBLIC_BASE_PATH" <<'PY2'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+htpasswd_path = sys.argv[2]
+internal_host = sys.argv[3]
+internal_port = sys.argv[4]
+public_base_path = sys.argv[5]
+text = path.read_text(encoding='utf-8')
+if 'location ^~ /paperclip/' in text:
+    raise SystemExit(0)
+needle = '''    location ^~ /api/chat-history {
+        default_type application/json;
+        return 410 '{"error":"chat-history endpoint retired after qqbot migration"}';
+    }
+'''
+block = f'''    location ^~ /api/chat-history {{
+        default_type application/json;
+        return 410 '{{"error":"chat-history endpoint retired after qqbot migration"}}';
+    }}
+
+    location = {public_base_path.rstrip('/')} {{
+        return 301 {public_base_path};
+    }}
+
+    location ^~ {public_base_path} {{
+        auth_basic "Paperclip Viewer";
+        auth_basic_user_file {htpasswd_path};
+
+        rewrite ^{public_base_path}(.*)$ /$1 break;
+        proxy_pass http://{internal_host}:{internal_port};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+    }}
+'''
+if needle not in text:
+    raise SystemExit('failed to find insertion point in openclaw public nginx config')
+path.write_text(text.replace(needle, block, 1), encoding='utf-8')
+PY2
 
 systemctl --user disable --now paperclip.service >/dev/null 2>&1 || true
 rm -f "$HOME/.config/systemd/user/paperclip.service"
@@ -198,7 +321,7 @@ systemctl reload nginx
 
 sleep 2
 curl -fsS "http://$INTERNAL_HOST:$INTERNAL_PORT/api/health" >/dev/null
-curl -fsS -u "$VIEWER_USER:$VIEWER_PASSWORD" "http://127.0.0.1:$PUBLIC_PORT/api/health" >/dev/null
+curl -fsS -u "$VIEWER_USER:$VIEWER_PASSWORD" "http://127.0.0.1${PUBLIC_BASE_PATH}api/health" >/dev/null
 
 echo "[OK] Paperclip runtime applied"
 echo "- runtime user: $RUNTIME_USER"
@@ -206,4 +329,5 @@ echo "- repo:    $PAPERCLIP_DIR"
 echo "- home:    $PAPERCLIP_HOME_DIR"
 echo "- internal: http://$INTERNAL_HOST:$INTERNAL_PORT"
 echo "- public:   $PAPERCLIP_PUBLIC_URL"
+echo "- legacy direct: http://$PUBLIC_HOST:$PUBLIC_PORT"
 echo "- viewer env: $VIEWER_ENV_FILE"

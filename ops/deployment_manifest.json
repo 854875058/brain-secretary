@@ -163,7 +163,8 @@
           "routes": {
             "/": "http://127.0.0.1:18789",
             "/chat-history": "410 retired after qqbot migration",
-            "/api/chat-history": "410 retired after qqbot migration"
+            "/api/chat-history": "410 retired after qqbot migration",
+            "/paperclip/": "http://127.0.0.1:3110 (basic auth, nginx rewrite prefix)"
           }
         },
         "paperclip": {
@@ -189,7 +190,10 @@
               "host": "0.0.0.0",
               "port": 3100
             }
-          ]
+          ],
+          "preferred_public_url": "http://110.41.170.155/paperclip/",
+          "legacy_public_url": "http://110.41.170.155:3100",
+          "note": "legacy :3100 listener is still configured, but cloud-side ingress is currently not open"
         }
       },
       "extra_locations": {
@@ -359,7 +363,8 @@
       "routes": {
         "/": "http://127.0.0.1:18789",
         "/chat-history": "410 retired after qqbot migration",
-        "/api/chat-history": "410 retired after qqbot migration"
+        "/api/chat-history": "410 retired after qqbot migration",
+        "/paperclip/": "http://127.0.0.1:3110 (basic auth, nginx rewrite prefix)"
       }
     },
     "paperclip": {
@@ -385,7 +390,10 @@
       "description": "Nginx basic-auth protected Paperclip viewer",
       "routes": {
         "/": "http://127.0.0.1:3110"
-      }
+      },
+      "preferred_public_url": "http://110.41.170.155/paperclip/",
+      "legacy_public_url": "http://110.41.170.155:3100",
+      "note": "legacy :3100 listener is still configured, but cloud-side ingress is currently not open"
     }
   }
 }

@@ -18,7 +18,8 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents
 
 - OpenClaw 主入口：`qqbot/default -> qq-main`
 - Paperclip 内部地址：`http://127.0.0.1:3110`
-- Paperclip 公网查看入口：`http://110.41.170.155:3100`
+- Paperclip 公网查看入口：`http://110.41.170.155/paperclip/`
+- Paperclip 直连入口：`http://110.41.170.155:3100`（保留，但当前云侧端口未放行）
 - Paperclip 运行用户：`paperclip`
 - Paperclip 代码目录：`/home/paperclip/paperclip`
 - Paperclip 数据目录：`/home/paperclip/paperclip-data`
@@ -129,7 +130,7 @@ curl http://127.0.0.1:3110/api/health
 
 ```bash
 source /root/.config/brain-secretary/paperclip-viewer.env
-curl -u "$PAPERCLIP_VIEWER_USER:$PAPERCLIP_VIEWER_PASSWORD" http://127.0.0.1:3100/api/health
+curl -u "$PAPERCLIP_VIEWER_USER:$PAPERCLIP_VIEWER_PASSWORD" http://127.0.0.1/paperclip/api/health
 ```
 
 查看控制面：
