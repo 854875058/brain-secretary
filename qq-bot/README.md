@@ -25,7 +25,12 @@
    - 自动把已固化记忆注入后续 prompt
    - `watchdog` 定时检查 OpenClaw / 端口 / NapCat
 
-4. **定时推送**
+4. **Paperclip 兼容桥接**
+   - `/pc-status` / `/pc-agents` / `/pc-issues`
+   - `/pc-new` 创建 issue
+   - `/pc-run` 创建并立即唤醒对应 Paperclip agent
+
+5. **定时推送**
    - 每天 9:00 推送爬虫统计
 
 ## 部署步骤
@@ -80,6 +85,8 @@ python main.py
 - 查看记忆：`/memories`
 - 搜索记忆：`/memory-search 关键词`
 - 查看 watchdog：`/watchdog`
+- 查看 Paperclip 状态：`/pc-status`
+- 创建并唤醒 Paperclip 任务：`/pc-run brain-secretary-dev|检查测试失败|先跑测试再给建议`
 
 ## 目录结构
 

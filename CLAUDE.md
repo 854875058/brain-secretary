@@ -115,6 +115,8 @@
 - Windows 项目自动跟踪脚本：`scripts/windows_project_autosync.ps1`
 - Windows 项目自动跟踪批处理：`scripts/windows_project_autosync.bat`
 - 双轨分支工作流文档：`docs/project-sync-branch-workflow.md`
+- Paperclip 桥接文档：`docs/paperclip-qq-bridge.md`
+- Paperclip CLI：`scripts/paperclip_cli.py`
 - NapCat 多实例根目录：`/root/napcat-multi`
 - QQ Bridge 多实例根目录：`/root/qq-bot-multi`
 - Windows 本地三开文档：`docs/windows-local-qq-multi.md`

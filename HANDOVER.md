@@ -257,4 +257,6 @@ python3 scripts/napcat_multi.py qr --json
 - 双轨同步脚本：`scripts/project_sync.py`
 - Windows 自动跟踪脚本：`scripts/windows_project_autosync.ps1`
 - Windows 自动跟踪批处理：`scripts/windows_project_autosync.bat`
+- Paperclip 桥接文档：`docs/paperclip-qq-bridge.md`
+- Paperclip CLI：`scripts/paperclip_cli.py`
 - 示例配置：`ops/project-sync.example.json`

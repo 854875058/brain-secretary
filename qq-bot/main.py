@@ -12,6 +12,8 @@ from bot.ai_client import PenguinAI
 from bot.openclaw_client import OpenClawClient, OpenClawError, OpenClawTurnResult
 from bot.qq_sender import QQSender
 from bot.command_handler import execute_command
+from bot.paperclip_client import PaperclipClient, PaperclipError
+from bot.paperclip_commands import run_paperclip_command
 from bot.scheduler import setup_scheduled_tasks
 from bot.task_db import (
     init_db,
@@ -111,6 +113,9 @@ EVOLUTION_EXTRA_KEYWORDS = [
     for item in (evolution_cfg.get("extra_keywords") or [])
     if str(item).strip()
 ]
+
+paperclip_cfg = config.get("paperclip") or {}
+paperclip = PaperclipClient.from_config(paperclip_cfg)
 
 # 自动扫描的项目目录
 PROJECT_SCAN_DIRS = config.get('project_dirs', [
@@ -310,6 +315,13 @@ async def handle_bot_command(cmd: str, user_id: int, reply_func):
 
     elif cmd == "/watchdog":
         await reply_func(await build_watchdog_report(qq))
+
+    elif cmd == "/pc-help" or cmd.startswith("/pc-") or cmd == "/paperclip":
+        try:
+            result = await asyncio.to_thread(run_paperclip_command, cmd, paperclip)
+        except PaperclipError as exc:
+            result = str(exc)
+        await reply_func(result)
 
     elif cmd.startswith("/search "):
         keyword = cmd[8:].strip()

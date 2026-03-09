@@ -33,6 +33,14 @@ ALLOWED_COMMANDS = {
     '/memories': '查看最近固化记忆',
     '/memory-search 关键词': '搜索桥接层记忆',
     '/watchdog': '查看闭环告警状态',
+    '/pc-status': '查看 Paperclip 连通性与配置',
+    '/pc-agents': '查看 Paperclip agent 列表',
+    '/pc-issues': '查看 Paperclip 最近 issues',
+    '/pc-issue': '查看 Paperclip issue 详情',
+    '/pc-new': '创建 Paperclip issue',
+    '/pc-run': '创建并唤醒 Paperclip 任务',
+    '/pc-wake': '手动唤醒 Paperclip agent',
+    '/pc-help': '查看 Paperclip 指令帮助',
 }
 
 

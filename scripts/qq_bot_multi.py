@@ -224,7 +224,7 @@ def whitelist_commands() -> list[str]:
         text = str(item).strip()
         if text and text not in cleaned:
             cleaned.append(text)
-    return cleaned or ['/status', '/disk', '/crawl', '/logs', '/help', '/projects', '/tasks', '/task', '/memories', '/memory-search', '/watchdog', '/evolve', '/remember']
+    return cleaned or ['/status', '/disk', '/crawl', '/logs', '/help', '/projects', '/tasks', '/task', '/memories', '/memory-search', '/watchdog', '/evolve', '/remember', '/pc-status', '/pc-agents', '/pc-issues', '/pc-issue', '/pc-new', '/pc-run', '/pc-wake', '/pc-help']
 
 
 def napcat_url(definition: dict[str, Any]) -> str:

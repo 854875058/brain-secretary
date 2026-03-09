@@ -114,6 +114,46 @@ python3 scripts/ops_manager.py logs gateway -n 80
 
 ---
 
+## Paperclip 可选接入（QQ / OpenClaw 后方调度层）
+
+如果你想在现有 `QQ -> OpenClaw` 后面再加一层任务编排，可以接入 Paperclip。
+
+仓库里已经补了：
+
+- 文档：`docs/paperclip-qq-bridge.md`
+- Bootstrap 脚本：`scripts/paperclip_bootstrap.sh`
+- CLI：`scripts/paperclip_cli.py`
+- 环境变量示例：`ops/paperclip.env.example`
+
+最小步骤：
+
+```bash
+bash scripts/paperclip_bootstrap.sh
+cd /root/paperclip
+set -a
+source .env.local
+set +a
+corepack pnpm dev:once
+```
+
+如果后续要让 QQ / OpenClaw 调它，再设置：
+
+```bash
+export QQ_BOT_PAPERCLIP_ENABLED=true
+export QQ_BOT_PAPERCLIP_API_BASE_URL=http://127.0.0.1:3100
+export QQ_BOT_PAPERCLIP_COMPANY_ID=<company-id>
+```
+
+然后你就可以：
+
+```bash
+python3 scripts/paperclip_cli.py status --json
+python3 scripts/paperclip_cli.py agents --json
+python3 scripts/paperclip_cli.py run --agent brain-secretary-dev --title "检查测试失败" --description "先跑测试再给建议" --json
+```
+
+---
+
 ## NapCat 多实例扫码示例（辅助测试）
 
 这套路径不是现网入口，只用于你要的 3 个独立扫码 QQ 示例：
