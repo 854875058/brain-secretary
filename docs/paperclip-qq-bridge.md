@@ -12,6 +12,7 @@
 ```text
 QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents
                                                                        -> Paperclip 控制面 / 任务面板
+                                                                       -> Paperclip 自动投影父子 issue
 ```
 
 当前现网参数：
@@ -34,6 +35,9 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents
 已经打通：
 
 - 本机 `QQ / CLI -> Paperclip` 走 `local_trusted`，默认不再依赖 agent key
+- `openclaw-paperclip-projection.service` 会自动把 `qq-main` 的子 agent 协同投影为 Paperclip 父子 issue
+- 投影 issue 默认不分配 assignee，只作为网页观战面板，避免在 Paperclip 里重复执行
+- 投影服务会忽略 Paperclip 自身 wake event，避免出现投影套投影
 - Paperclip 自动创建 / 维护 3 个控制面 agent：
   - `qq-main`
   - `brain-secretary-dev`
@@ -100,6 +104,19 @@ python3 scripts/paperclip_seed.py --json
 - 给 `qq-main` 生成 agent key（保留给后续扩展）
 - 生成本机桥接 env：`ops/paperclip.local.env`
 
+### 4) 安装自动投影服务
+
+```bash
+bash scripts/paperclip_projection_apply.sh
+```
+
+这个脚本会：
+
+- 安装 `openclaw-paperclip-projection.service` 到 `~/.config/systemd/user/`
+- 开机自启并立即拉起自动投影守护进程
+- 持续扫描 `qq-main` 转录，把真实子 agent 协同镜像到 Paperclip
+- 默认以纯展示 issue 形式写入，不会再次唤醒 Paperclip agent
+
 ---
 
 ## 本机桥接规则
@@ -125,6 +142,7 @@ QQ_BOT_PAPERCLIP_DEFAULT_ASSIGNEE_AGENT_ID=<agent-id>
 
 ```bash
 systemctl status paperclip.service
+systemctl --user status openclaw-paperclip-projection.service
 curl http://127.0.0.1:3110/api/health
 ```
 
@@ -141,6 +159,7 @@ curl -u "$PAPERCLIP_VIEWER_USER:$PAPERCLIP_VIEWER_PASSWORD" http://127.0.0.1/pap
 python3 scripts/paperclip_cli.py status --json
 python3 scripts/paperclip_cli.py agents --json
 python3 scripts/paperclip_cli.py issues --json
+python3 scripts/paperclip_projection_daemon.py once --json
 ```
 
 创建并触发一个任务：
@@ -192,10 +211,11 @@ Paperclip 不替代它，只提供：
 - 网页任务面板
 - issue / run / wake 控制面
 - agent 执行日志与可视化
+- `qq-main` 子 agent 协同的自动投影视图
 - 未来的多项目任务池 / 审批 / 追踪
 
 所以最推荐的日常用法还是：
 
 1. 你继续在 QQ 找 `qq-main`
-2. `qq-main` / 子 agent 在需要时调用 `scripts/paperclip_cli.py`
-3. 你同时可以在网页端看任务与运行日志
+2. `qq-main` 正常聊天仍走 OpenClaw 主入口；一旦它调用子 agent，自动投影服务会同步到 Paperclip
+3. 你同时可以在网页端看任务、父子 issue 和执行日志

@@ -1,0 +1,15 @@
+[Unit]
+Description=OpenClaw Paperclip Collaboration Projection
+After=network.target openclaw-gateway.service
+Wants=openclaw-gateway.service
+
+[Service]
+Type=simple
+WorkingDirectory=/root/brain-secretary
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/bash -lc 'exec /usr/bin/python3 /root/brain-secretary/scripts/paperclip_projection_daemon.py watch --interval ${PAPERCLIP_PROJECTION_INTERVAL_SECONDS:-15} --bootstrap-hours ${PAPERCLIP_PROJECTION_BOOTSTRAP_HOURS:-12}'
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -52,6 +52,7 @@
 
 - `openclaw-model-proxy.service`
 - `openclaw-gateway.service`
+- `openclaw-paperclip-projection.service`
 - `nginx.service`
 
 全部使用：
@@ -276,8 +277,12 @@ python3 scripts/napcat_multi.py qr --json
 
 - Paperclip 现在作为 `QQ/OpenClaw` 后面的任务控制面，不替代 `qqbot/default -> qq-main` 主入口
 - 当前服务：`paperclip.service`（systemd system service）
+- 当前自动投影服务：`openclaw-paperclip-projection.service`（systemd user service）
 - 当前内部地址：`http://127.0.0.1:3110`
 - 当前公网 viewer：`http://110.41.170.155/paperclip/`，经 `nginx /paperclip/ + basic auth` 暴露（`:3100` 直连保留，但当前云侧端口未放行）
 - 本机 `QQ / CLI -> Paperclip` 默认走 `local_trusted`，不再依赖本地 agent key
 - 当前 Paperclip 控制面 agent：`qq-main`、`brain-secretary-dev`、`brain-secretary-review`
 - 当前 OpenClaw gateway session key 固定为：`agent:<openclaw_agent_id>:paperclip`
+- `qq-main` 的子 agent 协同会自动投影成 Paperclip 父子 issue，方便网页端观战
+- 投影 issue 默认不分配 assignee，只用于展示，不会在 Paperclip 里再次派活
+- 投影服务会忽略 Paperclip 自身 wake event，避免递归回灌

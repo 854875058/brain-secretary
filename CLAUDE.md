@@ -30,7 +30,7 @@
 
 ### 当前 QQ 入口规则
 
-- 当前主 QQ 消息链路：`QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents`
+- 当前主 QQ 消息链路：`QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents`，子 agent 协同会自动投影到 Paperclip 父子 issue
 - 当前显式绑定：`qqbot:default -> qq-main`
 - 辅助多 QQ 链路：`NapCat(instance) -> QQ Bridge(instance) -> OpenClaw(target agent)`
 - 不要为了“省事”把 OpenClaw 原生主入口直接切到子 agent，那会破坏统一协调层
@@ -63,18 +63,19 @@
 
 ## 当前约定
 
-- Linux 当前部署方式：`systemd --user` + `nginx`
+- Linux 当前部署方式：`systemd --user(OpenClaw + projection)` + `systemd(Paperclip)` + `nginx`
 - Linux 当前 OpenClaw 配置文件：`/root/.openclaw/openclaw.json`
 - Linux 当前现网关键服务：
   - `openclaw-model-proxy.service`
   - `openclaw-gateway.service`
+  - `openclaw-paperclip-projection.service`
   - `nginx.service`
 - Linux 当前已退役服务：
   - `openclaw-qq-bridge.service`（已停用）
   - `napcat-qq.service`（已停用）
 - 关键服务分组：
   - `frontend` = `public_proxy`
-  - `backend` = `model_proxy + gateway`
+  - `backend` = `model_proxy + gateway + paperclip + paperclip_projection`
   - `all` = 当前平台全部关键组件
 - 不要优先手工 `kill` 进程；先尝试统一运维脚本
 - 不要把密钥、token、私密配置直接写入文档
@@ -118,6 +119,9 @@
 - Paperclip 桥接文档：`docs/paperclip-qq-bridge.md`
 - Paperclip CLI：`scripts/paperclip_cli.py`
 - Paperclip 中文补丁：`scripts/paperclip_ui_zh_patch.py`
+- Paperclip 自动投影脚本：`scripts/paperclip_projection_daemon.py`
+- Paperclip 自动投影安装脚本：`scripts/paperclip_projection_apply.sh`
+- Paperclip 自动投影 unit：`ops/systemd/openclaw-paperclip-projection.service`
 - Paperclip 代码目录：`/home/paperclip/paperclip`
 - Paperclip 数据目录：`/home/paperclip/paperclip-data`
 - Paperclip 内部地址：`http://127.0.0.1:3110`
@@ -184,8 +188,12 @@ openclaw agents bindings --json
 
 - Paperclip 现在作为 `QQ/OpenClaw` 后面的任务控制面，不替代 `qqbot/default -> qq-main` 主入口
 - 当前服务：`paperclip.service`（systemd system service）
+- 当前自动投影服务：`openclaw-paperclip-projection.service`（systemd user service）
 - 当前内部地址：`http://127.0.0.1:3110`
 - 当前公网 viewer：`http://110.41.170.155/paperclip/`，经 `nginx /paperclip/ + basic auth` 暴露（`:3100` 直连保留，但当前云侧端口未放行）
 - 本机 `QQ / CLI -> Paperclip` 默认走 `local_trusted`，不再依赖本地 agent key
 - 当前 Paperclip 控制面 agent：`qq-main`、`brain-secretary-dev`、`brain-secretary-review`
 - 当前 OpenClaw gateway session key 固定为：`agent:<openclaw_agent_id>:paperclip`
+- `qq-main` 只要调用了子 agent，自动投影服务就会把协同过程镜像成 Paperclip 父子 issue
+- 投影 issue 默认不分配 assignee，只用于网页观战，避免在 Paperclip 里重复执行
+- 投影服务会忽略 Paperclip 自身 wake event，避免递归回灌

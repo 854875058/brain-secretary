@@ -16,6 +16,10 @@ TRANSCRIPT_PREFIX_RE = re.compile(r"^\[[^\]]+\]\s*")
 WHITESPACE_RE = re.compile(r"\s+")
 CHILD_SESSION_KEY_RE = re.compile(r"agent:(?P<agent_id>[^:]+):subagent:(?P<child_key>[^\s]+)")
 SUBAGENT_TASK_RE = re.compile(r"\[Subagent Task\]:\s*(.*)", re.DOTALL)
+LEADING_UNTRUSTED_METADATA_RE = re.compile(
+    r"^(?:[^\n]*\(untrusted metadata\):\n```(?:json)?\n.*?\n```\n*)+",
+    re.DOTALL,
+)
 
 
 @dataclass
@@ -54,11 +58,15 @@ class AgentCollaborationRecord:
     agent_id: str | None
     task_label: str | None
     task_text: str | None
+    source_user_time: str | None = None
+    source_user_text: str | None = None
+    spawn_message_id: str | None = None
     brain_note: str | None = None
     spawn_status: str | None = None
     spawn_error: str | None = None
     child_session_key: str | None = None
     child_session_id: str | None = None
+    child_run_id: str | None = None
     child_session_path: str | None = None
     completion_status: str | None = None
     completion_result: str | None = None
@@ -83,6 +91,17 @@ def strip_transcript_prefix(text: str) -> str:
         if next_text == cleaned:
             return cleaned.strip()
         cleaned = next_text
+
+
+def extract_user_prompt_text(text: str) -> str:
+    cleaned = text or ""
+    while True:
+        next_text = LEADING_UNTRUSTED_METADATA_RE.sub("", cleaned, count=1)
+        if next_text == cleaned:
+            break
+        cleaned = next_text.lstrip()
+    cleaned = TRANSCRIPT_PREFIX_RE.sub("", cleaned, count=1)
+    return cleaned.strip()
 
 
 def parse_log_timestamp(value: str) -> datetime:
@@ -658,6 +677,8 @@ def load_agent_collaboration_records(transcript_dir: Path, transcript_session_id
 
         pending_by_call_id: dict[str, AgentCollaborationRecord] = {}
         pending_by_session_key: dict[str, AgentCollaborationRecord] = {}
+        last_user_time: str | None = None
+        last_user_text: str | None = None
 
         try:
             lines = transcript_path.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -689,6 +710,9 @@ def load_agent_collaboration_records(transcript_dir: Path, transcript_session_id
                         agent_id=str(arguments.get("agentId") or "") or None,
                         task_label=str(arguments.get("label") or "") or None,
                         task_text=str(arguments.get("task") or "") or None,
+                        source_user_time=last_user_time,
+                        source_user_text=last_user_text,
+                        spawn_message_id=str(item.get("id") or "") or None,
                         brain_note=brain_note,
                         spawn_status="requested",
                         transcript_session_id=session_id,
@@ -706,6 +730,7 @@ def load_agent_collaboration_records(transcript_dir: Path, transcript_session_id
                 details = message.get("details") or {}
                 record.spawn_status = str(details.get("status") or record.spawn_status or "") or record.spawn_status
                 record.spawn_error = str(details.get("error") or "") or record.spawn_error
+                record.child_run_id = str(details.get("runId") or "") or record.child_run_id
                 child_session_key = str(details.get("childSessionKey") or "") or None
                 if child_session_key:
                     record.child_session_key = child_session_key
@@ -716,6 +741,10 @@ def load_agent_collaboration_records(transcript_dir: Path, transcript_session_id
                 user_text = extract_content_text(message.get("content"))
                 internal = parse_internal_completion_message(user_text)
                 if not internal:
+                    prompt_text = extract_user_prompt_text(user_text)
+                    if prompt_text:
+                        last_user_time = display_time
+                        last_user_text = prompt_text
                     continue
                 event_time = format_display_timestamp(item_timestamp) or display_time
                 child_session_key = internal.get("child_session_key")

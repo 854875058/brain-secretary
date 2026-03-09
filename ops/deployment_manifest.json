@@ -1,7 +1,7 @@
 {
   "project": {
     "name": "Brain Secretary",
-    "service_chain": "QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> child agents -> Paperclip control plane",
+    "service_chain": "QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> child agents -> Paperclip control plane + projection",
     "repo_root": ".",
     "primary_docs": {
       "handover": "HANDOVER.md",
@@ -74,11 +74,14 @@
     "paperclip_runtime_apply_script": "scripts/paperclip_runtime_apply.sh",
     "paperclip_seed_script": "scripts/paperclip_seed.py",
     "paperclip_cli_script": "scripts/paperclip_cli.py",
-    "paperclip_ui_zh_patch_script": "scripts/paperclip_ui_zh_patch.py"
+    "paperclip_ui_zh_patch_script": "scripts/paperclip_ui_zh_patch.py",
+    "paperclip_projection_daemon_script": "scripts/paperclip_projection_daemon.py",
+    "paperclip_projection_apply_script": "scripts/paperclip_projection_apply.sh",
+    "paperclip_projection_systemd_unit": "ops/systemd/openclaw-paperclip-projection.service"
   },
   "platforms": {
     "linux": {
-      "deployment_mode": "systemd-user(OpenClaw) + systemd(Paperclip) + system-nginx + OpenClaw qqbot channel",
+      "deployment_mode": "systemd-user(OpenClaw + projection) + systemd(Paperclip) + system-nginx + OpenClaw qqbot channel",
       "groups": {
         "frontend": [
           "public_proxy",
@@ -87,12 +90,14 @@
         "backend": [
           "model_proxy",
           "gateway",
-          "paperclip"
+          "paperclip",
+          "paperclip_projection"
         ],
         "all": [
           "model_proxy",
           "gateway",
           "paperclip",
+          "paperclip_projection",
           "public_proxy",
           "paperclip_public_proxy"
         ]
@@ -113,7 +118,10 @@
         "systemctl status paperclip.service",
         "journalctl -u paperclip.service -n 80 --no-pager",
         "python3 scripts/paperclip_seed.py --json",
-        "python3 scripts/paperclip_cli.py status --json"
+        "python3 scripts/paperclip_cli.py status --json",
+        "bash scripts/paperclip_projection_apply.sh",
+        "python3 scripts/paperclip_projection_daemon.py once --json",
+        "python3 scripts/ops_manager.py logs paperclip_projection -n 80"
       ],
       "components": {
         "model_proxy": {
@@ -195,6 +203,11 @@
           "preferred_public_url": "http://110.41.170.155/paperclip/",
           "legacy_public_url": "http://110.41.170.155:3100",
           "note": "legacy :3100 listener is still configured, but cloud-side ingress is currently not open"
+        },
+        "paperclip_projection": {
+          "unit": "openclaw-paperclip-projection.service",
+          "script": "/root/brain-secretary/scripts/paperclip_projection_daemon.py",
+          "transcript_dir": "/root/.openclaw/agents/qq-main/sessions"
         }
       },
       "extra_locations": {
@@ -395,6 +408,10 @@
       "preferred_public_url": "http://110.41.170.155/paperclip/",
       "legacy_public_url": "http://110.41.170.155:3100",
       "note": "legacy :3100 listener is still configured, but cloud-side ingress is currently not open"
+    },
+    "paperclip_projection": {
+      "label": "Paperclip Collaboration Projection",
+      "description": "Auto-project qq-main subagent collaboration into read-only Paperclip parent/child issues"
     }
   }
 }

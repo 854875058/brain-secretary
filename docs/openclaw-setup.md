@@ -192,6 +192,9 @@ NapCat(instance) -> QQ Bridge(instance) -> OpenClaw(target agent)
 - Paperclip `openclaw_gateway` adapter 统一使用固定 session key，避免 `agent does not match session key agent main`
 - 当前固定 session key 规则：`agent:<openclaw_agent_id>:paperclip`
 - 本机 `Paperclip CLI / QQ` 默认直接调用 `http://127.0.0.1:3110`，依赖 `local_trusted` 板级权限
+- `openclaw-paperclip-projection.service` 会持续扫描 `qq-main` 转录，把真实子 agent 协同镜像成 Paperclip 父子 issue
+- 投影 issue 默认不分配 assignee，只做展示，不触发二次执行
+- 投影服务会过滤 Paperclip 自身 wake event，避免递归投影
 
 如果你调整了 OpenClaw agent id，同步要改：
 
@@ -199,3 +202,4 @@ NapCat(instance) -> QQ Bridge(instance) -> OpenClaw(target agent)
 - 已创建的 Paperclip agent adapterConfig
 - `docs/paperclip-qq-bridge.md`
 - `ops/deployment_manifest.json`
+- `ops/systemd/openclaw-paperclip-projection.service`

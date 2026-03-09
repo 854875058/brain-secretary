@@ -9,6 +9,7 @@
 
 ```text
 QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents -> qq-main -> QQ Bot -> QQ
+                                   -> Paperclip 协同投影 / 任务面板
 
 可选控制面：Paperclip 内部运行在 `127.0.0.1:3110`，公网优先经 `nginx` 的 `/paperclip/` 暴露（`:3100` 直连保留，但当前云侧端口未放行）
 ```
@@ -19,6 +20,7 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents -> qq-main -> QQ Bot -
 - `qq-main` 负责理解用户意图、调度子 agent、验收结果、统一回复
 - `nginx` 监听公网 `http://110.41.170.155:80/`，把 `/` 代理到 OpenClaw 内部 `127.0.0.1:18789`
 - `paperclip.service` 作为 system service 运行在 `127.0.0.1:3110`
+- `openclaw-paperclip-projection.service` 作为 systemd user service，持续把 `qq-main` 子 agent 协同投影到 Paperclip
 - `nginx` 在 `http://110.41.170.155/paperclip/` 提供 Paperclip viewer，并加 basic auth
 - `nginx` 仍保留 `http://110.41.170.155:3100/` 直连监听，但当前云侧端口未放行，公网通常超时
 - 历史 `qq-bot(FastAPI Bridge)` / `NapCat` 链路已退役，相关 systemd 服务已停用
@@ -32,6 +34,7 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents -> qq-main -> QQ Bot -
 | OpenClaw Model Proxy | `openclaw-model-proxy.service` | 模型代理 | - |
 | OpenClaw Gateway | `openclaw-gateway.service` | OpenClaw 主网关 + `qqbot` 渠道 | `18789` |
 | Paperclip | `paperclip.service` | Paperclip 控制面 / issue / heartbeat | `3110` |
+| Projection | `openclaw-paperclip-projection.service` | 自动投影 `qq-main` 子 agent 协同到 Paperclip | - |
 | Public Proxy | `nginx.service` | OpenClaw 根路径 + Paperclip `/paperclip/` + 3100 直连 | `80`, `3100` |
 
 ### 已退役服务
@@ -51,6 +54,7 @@ python3 scripts/ops_manager.py status all
 python3 scripts/ops_manager.py restart backend
 python3 scripts/ops_manager.py restart public_proxy
 python3 scripts/ops_manager.py logs gateway -n 80
+python3 scripts/ops_manager.py logs paperclip_projection -n 80
 systemctl status paperclip.service
 openclaw channels list
 openclaw agents bindings --json
@@ -99,7 +103,7 @@ python3 scripts/ops_manager.py logs gateway -n 80
 ### 服务状态
 
 ```bash
-systemctl --user status openclaw-model-proxy.service openclaw-gateway.service
+systemctl --user status openclaw-model-proxy.service openclaw-gateway.service openclaw-paperclip-projection.service
 systemctl status paperclip.service
 systemctl status nginx
 ```
@@ -261,6 +265,7 @@ systemctl --user status openclaw-qq-bridge.service napcat-qq.service
 当前 Paperclip 相关文件与端口：
 
 - systemd unit：`paperclip.service`
+- 自动投影 unit：`openclaw-paperclip-projection.service`
 - 运行目录：`/home/paperclip/paperclip`
 - 数据目录：`/home/paperclip/paperclip-data`
 - 内部 API：`127.0.0.1:3110`
@@ -273,7 +278,9 @@ systemctl --user status openclaw-qq-bridge.service napcat-qq.service
 
 ```bash
 systemctl status paperclip.service
+systemctl --user status openclaw-paperclip-projection.service
 journalctl -u paperclip.service -n 80 --no-pager
+journalctl --user -u openclaw-paperclip-projection.service -n 80 --no-pager
 python3 scripts/paperclip_seed.py --json
 python3 scripts/paperclip_cli.py status --json
 python3 scripts/paperclip_cli.py issues --json

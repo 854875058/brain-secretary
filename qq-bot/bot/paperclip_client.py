@@ -333,6 +333,8 @@ class PaperclipClient:
         assignee_agent_id: str | None = None,
         priority: str = "medium",
         status: str = "backlog",
+        parent_id: str | None = None,
+        use_default_assignee: bool = True,
     ) -> dict[str, Any]:
         company_id = self.resolve_company_id()
         payload: dict[str, Any] = {
@@ -341,12 +343,52 @@ class PaperclipClient:
             "priority": priority,
             "status": status,
         }
-        agent_id = str(assignee_agent_id or "").strip() or self.default_assignee_agent_id.strip() or None
+        explicit_agent_id = str(assignee_agent_id or "").strip()
+        agent_id = explicit_agent_id or (self.default_assignee_agent_id.strip() if use_default_assignee else "") or None
         if agent_id:
             payload["assigneeAgentId"] = agent_id
+        normalized_parent_id = str(parent_id or "").strip()
+        if normalized_parent_id:
+            payload["parentId"] = normalized_parent_id
         result = self._request("POST", f"/api/companies/{quote(company_id, safe='')}/issues", payload=payload)
         if not isinstance(result, dict):
             raise PaperclipError("Paperclip create issue 返回格式异常")
+        return result
+
+    def update_issue(
+        self,
+        issue_id: str,
+        *,
+        title: str | None = None,
+        description: str | None = None,
+        status: str | None = None,
+        priority: str | None = None,
+        assignee_agent_id: str | None = None,
+        parent_id: str | None = None,
+        comment: str | None = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {}
+        if title is not None:
+            payload["title"] = str(title).strip()
+        if description is not None:
+            payload["description"] = (description or "").strip() or None
+        if status is not None:
+            payload["status"] = str(status).strip()
+        if priority is not None:
+            payload["priority"] = str(priority).strip()
+        if assignee_agent_id is not None:
+            normalized_agent_id = str(assignee_agent_id or "").strip()
+            payload["assigneeAgentId"] = normalized_agent_id or None
+        if parent_id is not None:
+            normalized_parent_id = str(parent_id or "").strip()
+            payload["parentId"] = normalized_parent_id or None
+        if comment is not None:
+            payload["comment"] = (comment or "").strip() or None
+        if not payload:
+            raise PaperclipError("update issue 缺少可更新字段")
+        result = self._request("PATCH", f"/api/issues/{quote(issue_id.strip(), safe='')}", payload=payload)
+        if not isinstance(result, dict):
+            raise PaperclipError("Paperclip update issue 返回格式异常")
         return result
 
     def wake_agent(

@@ -22,6 +22,7 @@
 
 ```text
 QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents(按需) -> qq-main -> QQ Bot -> QQ
+                                     -> Paperclip 协同投影 / 任务面板
 ```
 
 ---
@@ -46,6 +47,7 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents(按需) -> qq-main -> 
 | 工程实施 | 子 agent 在各自 workspace 内完成具体代码和文档修改 |
 | 验收汇报 | 大脑对子 agent 结果进行核对并统一回复 |
 | 统一运维 | 通过 `scripts/ops_manager.py` 管理服务启停、状态、日志 |
+| 协同投影 | `qq-main` 的子 agent 协作自动投影到 Paperclip 父子 issue（纯展示，不二次派活） |
 
 ---
 
@@ -75,7 +77,7 @@ brain-secretary/
 
 - OpenClaw 配置文件：`/root/.openclaw/openclaw.json`
 - 脑 workspace：`/root/.openclaw/workspace`
-- 当前 Linux 部署方式：`systemctl --user + nginx`
+- 当前 Linux 部署方式：`systemctl --user + nginx + Paperclip 自动投影`
 - 当前 QQ 渠道绑定：`qqbot:default -> qq-main`
 - 当前关键端口：
   - OpenClaw 公网入口：`80`
@@ -92,6 +94,7 @@ brain-secretary/
 - 想看 Windows 本地三开 QQ 对接 → `docs/windows-local-qq-multi.md`
 - 想看 Windows / 服务器项目双轨分支协作 → `docs/project-sync-branch-workflow.md`
 - 想把 Paperclip 接到 QQ / OpenClaw → `docs/paperclip-qq-bridge.md`
+- 想开启 QQ 协同自动投影 → `scripts/paperclip_projection_apply.sh`
 - 想在 Windows 双击一键生成配置 → `scripts/windows_local_qq_quick_setup.bat`
 - 想在 Windows 本地做自检 → `scripts/windows_local_qq_doctor.bat`
 - 想手工查看桥接层记忆 → `scripts/memory_center.py`

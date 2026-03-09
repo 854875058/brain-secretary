@@ -125,6 +125,8 @@ python3 scripts/ops_manager.py logs gateway -n 80
 - 运行时部署脚本：`scripts/paperclip_runtime_apply.sh`
 - Seed 脚本：`scripts/paperclip_seed.py`
 - CLI：`scripts/paperclip_cli.py`
+- 自动投影守护脚本：`scripts/paperclip_projection_daemon.py`
+- 自动投影安装脚本：`scripts/paperclip_projection_apply.sh`
 - 环境变量示例：`ops/paperclip.env.example`
 
 最小步骤：
@@ -133,6 +135,7 @@ python3 scripts/ops_manager.py logs gateway -n 80
 bash scripts/paperclip_bootstrap.sh
 bash scripts/paperclip_runtime_apply.sh
 python3 scripts/paperclip_seed.py --json
+bash scripts/paperclip_projection_apply.sh
 ```
 
 当前默认部署结果：
@@ -144,6 +147,8 @@ python3 scripts/paperclip_seed.py --json
 - viewer 默认会注入中文汉化补丁，页面刷新后即可看到中文 UI
 - viewer 凭据：`/root/.config/brain-secretary/paperclip-viewer.env`
 - 本机桥接 env：`ops/paperclip.local.env`
+- `qq-main` 子 agent 协同会自动投影到 Paperclip 父子 issue
+- 这些投影 issue 默认是纯展示态，不会再次唤醒 Paperclip agent
 
 如果后续要让 QQ / OpenClaw 调它，本机联调默认直接用 `local_trusted`：
 
@@ -159,6 +164,7 @@ export QQ_BOT_PAPERCLIP_DEFAULT_ASSIGNEE_AGENT_ID=<agent-id>
 ```bash
 python3 scripts/paperclip_cli.py status --json
 python3 scripts/paperclip_cli.py agents --json
+python3 scripts/paperclip_projection_daemon.py once --json
 python3 scripts/paperclip_cli.py run --agent brain-secretary-dev --title "检查测试失败" --description "先跑测试再给建议" --json
 ```
 
