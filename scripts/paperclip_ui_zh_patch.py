@@ -38,6 +38,7 @@ EXACT_TRANSLATIONS = {
     'New goal': '新建目标',
     'New sub-goal': '新建子目标',
     'New issue': '新建问题',
+    'New Issue': '新建问题',
     'Add Project': '添加项目',
     'Add Goal': '添加目标',
     'Add a new agent': '添加新智能体',
@@ -57,8 +58,13 @@ EXACT_TRANSLATIONS = {
     'No goals yet.': '还没有目标。',
     'No projects yet.': '还没有项目。',
     'No activity yet.': '还没有动态。',
+    'No recent agent runs.': '最近没有智能体运行。',
     'No cost events yet.': '还没有成本记录。',
     'No project-attributed run costs yet.': '还没有归属到项目的运行成本。',
+    'No pending approvals.': '当前没有待审批事项。',
+    'No approvals yet.': '还没有审批记录。',
+    'No issues you\'re involved in yet.': '你暂时还没有参与的问题。',
+    'No inbox items match these filters.': '当前筛选条件下没有收件箱项目。',
     'Agents Enabled': '已启用智能体',
     'Tasks In Progress': '进行中的任务',
     'Month Spend': '本月花费',
@@ -69,6 +75,7 @@ EXACT_TRANSLATIONS = {
     'Success Rate': '成功率',
     'Last 14 days': '最近 14 天',
     'All': '全部',
+    'All Time': '全部时间',
     'Active': '活跃',
     'Paused': '已暂停',
     'Error': '异常',
@@ -135,6 +142,7 @@ EXACT_TRANSLATIONS = {
     'My recent issues': '我最近处理的问题',
     'Join requests': '加入申请',
     'Failed runs': '失败运行',
+    'Failed Runs': '失败运行',
     'Alerts': '提醒',
     'Stale work': '滞后工作',
     'Approval status': '审批状态',
@@ -142,6 +150,7 @@ EXACT_TRANSLATIONS = {
     'Needs action': '待处理',
     'Resolved': '已处理',
     'Dismiss': '忽略',
+    'Mark as read': '标记已读',
     'View inbox': '查看收件箱',
     'View agent': '查看智能体',
     'View run': '查看运行',
@@ -227,10 +236,28 @@ EXACT_TRANSLATIONS = {
     'Unset ANTHROPIC_API_KEY': '取消设置 ANTHROPIC_API_KEY',
     'Local Pi agent': '本地 Pi 智能体',
     'Local Cursor agent': '本地 Cursor 智能体',
+    'OpenClaw Gateway': 'OpenClaw 网关',
     'We recommend letting your CEO handle agent setup — they know the org structure and can configure reporting, permissions, and adapters.': '我们建议让 CEO 负责智能体配置——他们更了解组织结构，也能配置汇报关系、权限和适配器。',
     'Ask the CEO to create a new agent': '让 CEO 来创建新智能体',
     'I want advanced configuration myself': '我要自己进行高级配置',
     'Back': '返回',
+    'Live': '实时',
+    'Run': '运行',
+    'Recent run updates': '最近运行更新',
+    'Waiting for output...': '等待输出...',
+    'Waiting for run output...': '等待运行输出...',
+    'Run exited with an error.': '运行异常退出。',
+    'Retry was skipped because the agent is not currently invokable.': '跳过重试：当前智能体暂时不可调用。',
+    'Error code:': '错误码：',
+    'No linked issue': '未关联问题',
+    'Failed to retry run': '重试运行失败',
+    'Failed to approve': '审批通过失败',
+    'Failed to reject': '驳回失败',
+    'Failed to approve join request': '通过加入申请失败',
+    'Failed to reject join request': '拒绝加入申请失败',
+    'Agent join request': '智能体加入申请',
+    'adapter:': '适配器：',
+    'to': '至',
 }
 
 REGEX_RULES = [
@@ -238,6 +265,8 @@ REGEX_RULES = [
     (r'^(\\d+) agents?$', '{0} 个智能体'),
     (r'^Agent ([A-Za-z0-9_-]+)$', '智能体 {0}'),
     (r'^run ([A-Za-z0-9_-]+)$', '运行 {0}'),
+    (r'^Error code: (.+)$', '错误码：{0}'),
+    (r'^Agent join request: (.+)$', '智能体加入申请：{0}'),
 ]
 
 
@@ -255,6 +284,9 @@ def build_patch_js(base_path: str) -> str:
   const ATTRS = ['placeholder', 'title', 'aria-label'];
   const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'CODE', 'PRE', 'TEXTAREA']);
   const basePath = {json.dumps(base_path, ensure_ascii=False)};
+  const HELP_STORAGE_KEY = 'paperclip.zh.help.dismissed';
+  const HELP_PANEL_ID = 'paperclip-zh-help-panel';
+  const HELP_LAUNCHER_ID = 'paperclip-zh-help-launcher';
 
   function normalize(text) {{
     return text.replace(/\\s+/g, ' ').trim();
@@ -329,6 +361,133 @@ def build_patch_js(base_path: str) -> str:
     }}
   }}
 
+  function safeGetDismissed() {{
+    try {{
+      return window.localStorage.getItem(HELP_STORAGE_KEY) === '1';
+    }} catch {{
+      return false;
+    }}
+  }}
+
+  function safeSetDismissed(value) {{
+    try {{
+      window.localStorage.setItem(HELP_STORAGE_KEY, value ? '1' : '0');
+    }} catch {{
+      return;
+    }}
+  }}
+
+  function ensureHelpWidgets() {{
+    if (!document.body) return;
+
+    let launcher = document.getElementById(HELP_LAUNCHER_ID);
+    if (!launcher) {{
+      launcher = document.createElement('button');
+      launcher.id = HELP_LAUNCHER_ID;
+      launcher.type = 'button';
+      launcher.textContent = '用途说明';
+      Object.assign(launcher.style, {{
+        position: 'fixed',
+        left: '16px',
+        bottom: '16px',
+        zIndex: '9999',
+        border: '1px solid rgba(255,255,255,0.18)',
+        background: 'rgba(24,24,27,0.92)',
+        color: '#fff',
+        borderRadius: '999px',
+        padding: '10px 14px',
+        fontSize: '13px',
+        lineHeight: '1',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.28)',
+        cursor: 'pointer',
+      }});
+      launcher.addEventListener('click', () => {{
+        safeSetDismissed(false);
+        ensureHelpWidgets();
+      }});
+      document.body.appendChild(launcher);
+    }}
+
+    let panel = document.getElementById(HELP_PANEL_ID);
+    if (!panel) {{
+      panel = document.createElement('aside');
+      panel.id = HELP_PANEL_ID;
+      Object.assign(panel.style, {{
+        position: 'fixed',
+        left: '16px',
+        bottom: '16px',
+        zIndex: '10000',
+        width: 'min(380px, calc(100vw - 24px))',
+        maxHeight: 'min(70vh, 560px)',
+        overflow: 'auto',
+        borderRadius: '16px',
+        padding: '16px',
+        background: 'rgba(24,24,27,0.96)',
+        color: '#fafafa',
+        border: '1px solid rgba(255,255,255,0.12)',
+        boxShadow: '0 20px 48px rgba(0,0,0,0.34)',
+        backdropFilter: 'blur(10px)',
+      }});
+      panel.innerHTML = `
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+          <div>
+            <div style="font-size:16px;font-weight:700;line-height:1.3;">这页面是干嘛的？</div>
+            <div style="margin-top:6px;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.78);">
+              你平时继续在 QQ 里给大脑派活；这个页面主要是<strong>看进度、追任务、查日志、做确认</strong>。
+            </div>
+          </div>
+          <button type="button" data-role="close-help" style="border:none;background:transparent;color:#fff;font-size:18px;line-height:1;cursor:pointer;opacity:.8;">×</button>
+        </div>
+        <div style="margin-top:12px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,0.06);font-size:13px;line-height:1.6;">
+          最常用的入口其实就三个：<strong>问题</strong>、<strong>收件箱</strong>、<strong>动态</strong>。
+        </div>
+        <div style="margin-top:12px;display:grid;gap:10px;">
+          <div style="padding:10px 12px;border-radius:12px;background:rgba(255,255,255,0.05);">
+            <div style="font-weight:600;">1. 仪表盘</div>
+            <div style="margin-top:4px;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.78);">看智能体有没有在干活、最近跑了什么、有没有待审批、花了多少钱。</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:12px;background:rgba(255,255,255,0.05);">
+            <div style="font-weight:600;">2. 问题</div>
+            <div style="margin-top:4px;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.78);">这里最像任务列表。你可以建一个问题，指派给某个智能体，然后跟踪它做到哪一步。</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:12px;background:rgba(255,255,255,0.05);">
+            <div style="font-weight:600;">3. 项目 / 目标</div>
+            <div style="margin-top:4px;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.78);">把长期工作分门别类放好。项目管范围，目标管方向，问题负责具体执行。</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:12px;background:rgba(255,255,255,0.05);">
+            <div style="font-weight:600;">4. 收件箱 / 审批</div>
+            <div style="margin-top:4px;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.78);">集中看提醒、失败运行、加入申请、待你处理的审批，不用自己翻日志找。</div>
+          </div>
+          <div style="padding:10px 12px;border-radius:12px;background:rgba(255,255,255,0.05);">
+            <div style="font-weight:600;">5. 动态 / 成本</div>
+            <div style="margin-top:4px;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.78);">动态看最近发生了什么，成本看模型花费，适合你做复盘和控预算。</div>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding:10px 12px;border-radius:12px;background:rgba(65,105,225,0.18);font-size:13px;line-height:1.7;">
+          <strong>推荐用法：</strong>先去“问题”里新建一个任务 → 指派给某个智能体 → 再去“收件箱 / 动态”看回执和执行结果。
+        </div>
+        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+          <a href="${{basePath}}issues" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 12px;border-radius:10px;background:#2563eb;color:#fff;text-decoration:none;font-size:13px;font-weight:600;">去看问题</a>
+          <a href="${{basePath}}inbox" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.08);color:#fff;text-decoration:none;font-size:13px;font-weight:600;">去看收件箱</a>
+          <button type="button" data-role="hide-help" style="display:inline-flex;align-items:center;justify-content:center;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.14);background:transparent;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">知道了</button>
+        </div>
+      `;
+      panel.querySelector('[data-role="close-help"]')?.addEventListener('click', () => {{
+        safeSetDismissed(true);
+        ensureHelpWidgets();
+      }});
+      panel.querySelector('[data-role="hide-help"]')?.addEventListener('click', () => {{
+        safeSetDismissed(true);
+        ensureHelpWidgets();
+      }});
+      document.body.appendChild(panel);
+    }}
+
+    const dismissed = safeGetDismissed();
+    panel.style.display = dismissed ? 'none' : 'block';
+    launcher.style.display = dismissed ? 'inline-flex' : 'none';
+  }}
+
   let raf = 0;
   function schedule(root) {{
     if (raf) cancelAnimationFrame(raf);
@@ -337,6 +496,7 @@ def build_patch_js(base_path: str) -> str:
       walk(root || document.body || document.documentElement);
       patchTitle();
       patchManifestLink();
+      ensureHelpWidgets();
     }});
   }}
 
@@ -357,6 +517,7 @@ def build_patch_js(base_path: str) -> str:
       for (const node of mutation.addedNodes) walk(node);
     }}
     patchTitle();
+    ensureHelpWidgets();
   }});
 
   observer.observe(document.documentElement, {{
@@ -367,7 +528,7 @@ def build_patch_js(base_path: str) -> str:
     attributeFilter: ATTRS,
   }});
 
-  window.__paperclipZhPatchVersion = '2026-03-09';
+  window.__paperclipZhPatchVersion = '2026-03-09-v2';
 }})();
 """
 
