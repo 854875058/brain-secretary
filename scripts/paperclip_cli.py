@@ -90,13 +90,13 @@ def main() -> int:
             raise SystemExit('run 需要 --agent 和 --title')
         assignee = client.resolve_agent_ref(args.agent)
         assignee_id = str(assignee.get('id') or '').strip()
-        issue = client.create_issue(title=args.title, description=args.description, assignee_agent_id=assignee_id)
-        wake = client.wake_agent(
-            assignee_id,
-            reason=args.reason or f"CLI run: {issue.get('identifier') or issue.get('id')}",
-            payload={'issueId': issue.get('id'), 'issueIdentifier': issue.get('identifier')},
-        ) or {}
-        payload = {'issue': issue, 'wake': wake}
+        issue = client.create_issue(
+            title=args.title,
+            description=args.description,
+            assignee_agent_id=assignee_id,
+            status='todo',
+        )
+        payload = {'issue': issue, 'wake': {'status': 'queued_via_issue_assignment'}}
         _print(payload, args.json)
         return 0
 

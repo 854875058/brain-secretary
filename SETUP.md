@@ -116,12 +116,14 @@ python3 scripts/ops_manager.py logs gateway -n 80
 
 ## Paperclip 可选接入（QQ / OpenClaw 后方调度层）
 
-如果你想在现有 `QQ -> OpenClaw` 后面再加一层任务编排，可以接入 Paperclip。
+如果你想在现有 `QQ -> OpenClaw` 后面再加一层任务编排 / 网页看板，可以接入 Paperclip。
 
 仓库里已经补了：
 
 - 文档：`docs/paperclip-qq-bridge.md`
 - Bootstrap 脚本：`scripts/paperclip_bootstrap.sh`
+- 运行时部署脚本：`scripts/paperclip_runtime_apply.sh`
+- Seed 脚本：`scripts/paperclip_seed.py`
 - CLI：`scripts/paperclip_cli.py`
 - 环境变量示例：`ops/paperclip.env.example`
 
@@ -129,19 +131,26 @@ python3 scripts/ops_manager.py logs gateway -n 80
 
 ```bash
 bash scripts/paperclip_bootstrap.sh
-cd /root/paperclip
-set -a
-source .env.local
-set +a
-corepack pnpm dev:once
+bash scripts/paperclip_runtime_apply.sh
+python3 scripts/paperclip_seed.py --json
 ```
 
-如果后续要让 QQ / OpenClaw 调它，再设置：
+当前默认部署结果：
+
+- Paperclip 代码：`/home/paperclip/paperclip`
+- Paperclip 数据：`/home/paperclip/paperclip-data`
+- 内部 API：`http://127.0.0.1:3110`
+- 公网 viewer：`http://110.41.170.155:3100`
+- viewer 凭据：`/root/.config/brain-secretary/paperclip-viewer.env`
+- 本机桥接 env：`ops/paperclip.local.env`
+
+如果后续要让 QQ / OpenClaw 调它，本机联调默认直接用 `local_trusted`：
 
 ```bash
 export QQ_BOT_PAPERCLIP_ENABLED=true
-export QQ_BOT_PAPERCLIP_API_BASE_URL=http://127.0.0.1:3100
+export QQ_BOT_PAPERCLIP_API_BASE_URL=http://127.0.0.1:3110
 export QQ_BOT_PAPERCLIP_COMPANY_ID=<company-id>
+export QQ_BOT_PAPERCLIP_DEFAULT_ASSIGNEE_AGENT_ID=<agent-id>
 ```
 
 然后你就可以：

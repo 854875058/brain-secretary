@@ -259,4 +259,24 @@ python3 scripts/napcat_multi.py qr --json
 - Windows 自动跟踪批处理：`scripts/windows_project_autosync.bat`
 - Paperclip 桥接文档：`docs/paperclip-qq-bridge.md`
 - Paperclip CLI：`scripts/paperclip_cli.py`
+- Paperclip 代码目录：`/home/paperclip/paperclip`
+- Paperclip 数据目录：`/home/paperclip/paperclip-data`
+- Paperclip 内部地址：`http://127.0.0.1:3110`
+- Paperclip 公网 viewer：`http://110.41.170.155:3100`
+- Paperclip viewer 凭据：`/root/.config/brain-secretary/paperclip-viewer.env`
+- Paperclip 本机桥接 env：`ops/paperclip.local.env`
+- Paperclip Bootstrap：`scripts/paperclip_bootstrap.sh`
+- Paperclip 运行时部署：`scripts/paperclip_runtime_apply.sh`
+- Paperclip Seed：`scripts/paperclip_seed.py`
 - 示例配置：`ops/project-sync.example.json`
+
+
+## Paperclip 当前状态
+
+- Paperclip 现在作为 `QQ/OpenClaw` 后面的任务控制面，不替代 `qqbot/default -> qq-main` 主入口
+- 当前服务：`paperclip.service`（systemd system service）
+- 当前内部地址：`http://127.0.0.1:3110`
+- 当前公网 viewer：`http://110.41.170.155:3100`，经 `nginx + basic auth` 暴露
+- 本机 `QQ / CLI -> Paperclip` 默认走 `local_trusted`，不再依赖本地 agent key
+- 当前 Paperclip 控制面 agent：`qq-main`、`brain-secretary-dev`、`brain-secretary-review`
+- 当前 OpenClaw gateway session key 固定为：`agent:<openclaw_agent_id>:paperclip`

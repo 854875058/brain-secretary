@@ -170,13 +170,13 @@ def run_paperclip_command(cmd: str, client: PaperclipClient) -> str:
         agent_ref, title, description = parts[0], parts[1], parts[2]
         agent = client.resolve_agent_ref(agent_ref)
         agent_id = str(agent.get("id") or "").strip()
-        issue = client.create_issue(title=title, description=description, assignee_agent_id=agent_id)
-        wake = client.wake_agent(
-            agent_id,
-            reason=f"QQ run: {_issue_identifier(issue)} {title}",
-            payload={"issueId": issue.get("id"), "issueIdentifier": issue.get("identifier")},
-        ) or {}
-        return f"已创建并唤醒: {_issue_identifier(issue)}\n- agent: {_agent_label(agent)}\n- wake: {_short(wake, 300)}"
+        issue = client.create_issue(
+            title=title,
+            description=description,
+            assignee_agent_id=agent_id,
+            status="todo",
+        )
+        return f"已创建并触发: {_issue_identifier(issue)}\n- agent: {_agent_label(agent)}\n- status: {issue.get('status') or 'todo'}"
 
     if text.startswith("/pc-"):
         return PAPERCLIP_HELP

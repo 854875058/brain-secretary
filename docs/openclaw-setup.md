@@ -1,6 +1,6 @@
 # OpenClaw 配置说明（qqbot 渠道）
 
-> 更新：2026-03-07
+> 更新：2026-03-09
 > 当前现网 QQ 入口：OpenClaw 原生 `qqbot` 渠道
 
 ---
@@ -176,3 +176,26 @@ NapCat(instance) -> QQ Bridge(instance) -> OpenClaw(target agent)
 - 用 `python3 scripts/qq_bot_multi.py import-profile --profile ...` 把本地 profile 导入服务器
 
 详细说明见：`docs/windows-local-qq-multi.md`
+
+
+## Paperclip 对接约定
+
+当前 Paperclip 控制面直接复用现有 OpenClaw agent：
+
+- `qq-main` -> `qq-main`
+- `brain-secretary-dev` -> `brain-secretary-dev`
+- `brain-secretary-review` -> `brain-secretary-review`
+
+关键约定：
+
+- Paperclip 不是新的 QQ 入口，QQ 入口仍然是 `qqbot/default -> qq-main`
+- Paperclip `openclaw_gateway` adapter 统一使用固定 session key，避免 `agent does not match session key agent main`
+- 当前固定 session key 规则：`agent:<openclaw_agent_id>:paperclip`
+- 本机 `Paperclip CLI / QQ` 默认直接调用 `http://127.0.0.1:3110`，依赖 `local_trusted` 板级权限
+
+如果你调整了 OpenClaw agent id，同步要改：
+
+- `scripts/paperclip_seed.py`
+- 已创建的 Paperclip agent adapterConfig
+- `docs/paperclip-qq-bridge.md`
+- `ops/deployment_manifest.json`

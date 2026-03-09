@@ -4,6 +4,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode
@@ -11,12 +12,31 @@ from urllib.request import Request, urlopen
 
 logger = logging.getLogger(__name__)
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_LOCAL_ENV_FILE = PROJECT_ROOT / 'ops' / 'paperclip.local.env'
+
 
 class PaperclipError(RuntimeError):
     pass
 
 
 DEFAULT_TIMEOUT_SECONDS = 30
+
+
+def _load_local_env_file(path: Path) -> dict[str, str]:
+    if not path.exists():
+        return {}
+    result: dict[str, str] = {}
+    try:
+        for line in path.read_text(encoding='utf-8').splitlines():
+            raw = line.strip()
+            if not raw or raw.startswith('#') or '=' not in raw:
+                continue
+            key, value = raw.split('=', 1)
+            result[key.strip()] = value.strip()
+    except Exception as exc:
+        logger.warning('读取 Paperclip 本地 env 文件失败: path=%s err=%s', path, exc)
+    return result
 
 
 def _bool_env(name: str, default: bool) -> bool:
@@ -56,25 +76,42 @@ class PaperclipClient:
     @classmethod
     def from_config(cls, config: dict[str, Any] | None = None) -> "PaperclipClient":
         config = config or {}
-        enabled = _bool_env("QQ_BOT_PAPERCLIP_ENABLED", bool(config.get("enabled", False)))
-        api_base_url = _str_env(
-            "QQ_BOT_PAPERCLIP_API_BASE_URL",
-            str(config.get("api_base_url") or config.get("base_url") or ""),
+        env_file_value = str(config.get('env_file') or '').strip() or os.environ.get('QQ_BOT_PAPERCLIP_ENV_FILE', '').strip()
+        env_file = Path(env_file_value).expanduser() if env_file_value else DEFAULT_LOCAL_ENV_FILE
+        local_env = _load_local_env_file(env_file)
+
+        def pick(key: str, config_value: Any = '') -> str:
+            env_value = os.environ.get(key)
+            if env_value is not None and str(env_value).strip() != '':
+                return str(env_value).strip()
+            local_value = local_env.get(key)
+            if local_value is not None and str(local_value).strip() != '':
+                return str(local_value).strip()
+            return str(config_value or '').strip()
+
+        enabled_raw = os.environ.get('QQ_BOT_PAPERCLIP_ENABLED')
+        if enabled_raw is None:
+            enabled_raw = local_env.get('QQ_BOT_PAPERCLIP_ENABLED')
+        enabled = (
+            str(enabled_raw).strip().lower() in {'1', 'true', 'yes', 'on'}
+            if enabled_raw is not None
+            else bool(config.get('enabled', False))
         )
-        company_id = _str_env("QQ_BOT_PAPERCLIP_COMPANY_ID", str(config.get("company_id") or ""))
-        api_key = _str_env("QQ_BOT_PAPERCLIP_API_KEY", str(config.get("api_key") or ""))
-        auth_cookie = _str_env("QQ_BOT_PAPERCLIP_AUTH_COOKIE", str(config.get("auth_cookie") or ""))
-        default_assignee_agent_id = _str_env(
-            "QQ_BOT_PAPERCLIP_DEFAULT_ASSIGNEE_AGENT_ID",
-            str(config.get("default_assignee_agent_id") or ""),
-        )
-        timeout_seconds = _int_env(
-            "QQ_BOT_PAPERCLIP_TIMEOUT_SECONDS",
-            int(config.get("timeout_seconds") or DEFAULT_TIMEOUT_SECONDS),
-        )
+        api_base_url = pick('QQ_BOT_PAPERCLIP_API_BASE_URL', config.get('api_base_url') or config.get('base_url') or '')
+        company_id = pick('QQ_BOT_PAPERCLIP_COMPANY_ID', config.get('company_id') or '')
+        api_key = pick('QQ_BOT_PAPERCLIP_API_KEY', config.get('api_key') or '')
+        auth_cookie = pick('QQ_BOT_PAPERCLIP_AUTH_COOKIE', config.get('auth_cookie') or '')
+        default_assignee_agent_id = pick('QQ_BOT_PAPERCLIP_DEFAULT_ASSIGNEE_AGENT_ID', config.get('default_assignee_agent_id') or '')
+        timeout_raw = os.environ.get('QQ_BOT_PAPERCLIP_TIMEOUT_SECONDS')
+        if timeout_raw is None:
+            timeout_raw = local_env.get('QQ_BOT_PAPERCLIP_TIMEOUT_SECONDS')
+        try:
+            timeout_seconds = int(str(timeout_raw).strip()) if timeout_raw is not None and str(timeout_raw).strip() else int(config.get('timeout_seconds') or DEFAULT_TIMEOUT_SECONDS)
+        except Exception:
+            timeout_seconds = int(config.get('timeout_seconds') or DEFAULT_TIMEOUT_SECONDS)
         return cls(
             enabled=enabled,
-            api_base_url=api_base_url.rstrip("/"),
+            api_base_url=api_base_url.rstrip('/'),
             company_id=company_id,
             api_key=api_key,
             auth_cookie=auth_cookie,
@@ -183,6 +220,25 @@ class PaperclipClient:
             return [item for item in result if isinstance(item, dict)]
         return []
 
+    def find_company_by_name(self, name: str) -> dict[str, Any] | None:
+        needle = str(name or '').strip().lower()
+        if not needle:
+            return None
+        for company in self.list_companies():
+            company_name = str(company.get('name') or '').strip().lower()
+            if company_name == needle:
+                return company
+        return None
+
+    def create_company(self, name: str, description: str | None = None) -> dict[str, Any]:
+        result = self._request('POST', '/api/companies', payload={
+            'name': str(name or '').strip(),
+            'description': (description or '').strip() or None,
+        })
+        if not isinstance(result, dict):
+            raise PaperclipError('Paperclip create company 返回格式异常')
+        return result
+
     def resolve_company_id(self) -> str:
         if self.company_id:
             return self.company_id
@@ -199,6 +255,48 @@ class PaperclipClient:
         if isinstance(result, list):
             return [item for item in result if isinstance(item, dict)]
         return []
+
+    def find_agent_by_name(self, ref: str) -> dict[str, Any] | None:
+        needle = str(ref or '').strip().lower()
+        if not needle:
+            return None
+        for agent in self.list_agents():
+            values = [
+                str(agent.get('id') or '').strip().lower(),
+                str(agent.get('name') or '').strip().lower(),
+                str(agent.get('title') or '').strip().lower(),
+                str(agent.get('shortname') or '').strip().lower(),
+            ]
+            if needle in {value for value in values if value}:
+                return agent
+        return None
+
+    def create_agent(self, payload: dict[str, Any]) -> dict[str, Any]:
+        company_id = self.resolve_company_id()
+        result = self._request('POST', f'/api/companies/{quote(company_id, safe="")}/agents', payload=payload)
+        if not isinstance(result, dict):
+            raise PaperclipError('Paperclip create agent 返回格式异常')
+        return result
+
+    def update_agent(self, agent_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+        result = self._request('PATCH', f'/api/agents/{quote(agent_id.strip(), safe="")}', payload=payload)
+        if not isinstance(result, dict):
+            raise PaperclipError('Paperclip update agent 返回格式异常')
+        return result
+
+    def update_agent_permissions(self, agent_id: str, *, can_create_agents: bool) -> dict[str, Any]:
+        result = self._request('PATCH', f'/api/agents/{quote(agent_id.strip(), safe="")}/permissions', payload={
+            'canCreateAgents': bool(can_create_agents),
+        })
+        if not isinstance(result, dict):
+            raise PaperclipError('Paperclip update agent permissions 返回格式异常')
+        return result
+
+    def create_agent_key(self, agent_id: str, *, name: str = 'default') -> dict[str, Any]:
+        result = self._request('POST', f'/api/agents/{quote(agent_id.strip(), safe="")}/keys', payload={'name': name})
+        if not isinstance(result, dict):
+            raise PaperclipError('Paperclip create agent key 返回格式异常')
+        return result
 
     def list_issues(
         self,

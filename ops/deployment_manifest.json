@@ -1,7 +1,7 @@
 {
   "project": {
     "name": "Brain Secretary",
-    "service_chain": "QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> child agents",
+    "service_chain": "QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> child agents -> Paperclip control plane",
     "repo_root": ".",
     "primary_docs": {
       "handover": "HANDOVER.md",
@@ -63,23 +63,37 @@
     "qq_bot_multi_root": "/root/qq-bot-multi",
     "windows_local_qq_multi_script": "scripts/windows_local_qq_multi.ps1",
     "windows_local_qq_multi_doc": "docs/windows-local-qq-multi.md",
-    "windows_local_qq_profile_example": "ops/windows-local-qq-profile.example.json"
+    "windows_local_qq_profile_example": "ops/windows-local-qq-profile.example.json",
+    "paperclip_repo": "/home/paperclip/paperclip",
+    "paperclip_home": "/home/paperclip/paperclip-data",
+    "paperclip_env": "/home/paperclip/paperclip/.env.local",
+    "paperclip_local_env": "ops/paperclip.local.env",
+    "paperclip_viewer_env": "/root/.config/brain-secretary/paperclip-viewer.env",
+    "paperclip_public_proxy_config": "/etc/nginx/sites-available/paperclip-public.conf",
+    "paperclip_bootstrap_script": "scripts/paperclip_bootstrap.sh",
+    "paperclip_runtime_apply_script": "scripts/paperclip_runtime_apply.sh",
+    "paperclip_seed_script": "scripts/paperclip_seed.py",
+    "paperclip_cli_script": "scripts/paperclip_cli.py"
   },
   "platforms": {
     "linux": {
-      "deployment_mode": "systemd-user + system-nginx + OpenClaw qqbot channel",
+      "deployment_mode": "systemd-user(OpenClaw) + systemd(Paperclip) + system-nginx + OpenClaw qqbot channel",
       "groups": {
         "frontend": [
-          "public_proxy"
+          "public_proxy",
+          "paperclip_public_proxy"
         ],
         "backend": [
           "model_proxy",
-          "gateway"
+          "gateway",
+          "paperclip"
         ],
         "all": [
           "model_proxy",
           "gateway",
-          "public_proxy"
+          "paperclip",
+          "public_proxy",
+          "paperclip_public_proxy"
         ]
       },
       "usage_examples": [
@@ -94,7 +108,11 @@
         "python3 scripts/napcat_multi.py status --json",
         "python3 scripts/napcat_multi.py qr --json",
         "python3 scripts/qq_bot_multi.py bootstrap --json",
-        "python3 scripts/qq_bot_multi.py status --json"
+        "python3 scripts/qq_bot_multi.py status --json",
+        "systemctl status paperclip.service",
+        "journalctl -u paperclip.service -n 80 --no-pager",
+        "python3 scripts/paperclip_seed.py --json",
+        "python3 scripts/paperclip_cli.py status --json"
       ],
       "components": {
         "model_proxy": {
@@ -147,6 +165,31 @@
             "/chat-history": "410 retired after qqbot migration",
             "/api/chat-history": "410 retired after qqbot migration"
           }
+        },
+        "paperclip": {
+          "unit": "paperclip.service",
+          "working_directory": "/home/paperclip/paperclip",
+          "env_file": "/home/paperclip/paperclip/.env.local",
+          "runtime_user": "paperclip",
+          "ports": [
+            {
+              "name": "api",
+              "host": "127.0.0.1",
+              "port": 3110
+            }
+          ],
+          "viewer_credentials": "/root/.config/brain-secretary/paperclip-viewer.env"
+        },
+        "paperclip_public_proxy": {
+          "unit": "nginx.service",
+          "config_path": "/etc/nginx/sites-available/paperclip-public.conf",
+          "ports": [
+            {
+              "name": "paperclip_viewer",
+              "host": "0.0.0.0",
+              "port": 3100
+            }
+          ]
         }
       },
       "extra_locations": {
@@ -317,6 +360,31 @@
         "/": "http://127.0.0.1:18789",
         "/chat-history": "410 retired after qqbot migration",
         "/api/chat-history": "410 retired after qqbot migration"
+      }
+    },
+    "paperclip": {
+      "label": "Paperclip Control Plane",
+      "description": "Paperclip issue / heartbeat / web viewer control plane",
+      "agents": [
+        {
+          "name": "qq-main",
+          "session_key": "agent:qq-main:paperclip"
+        },
+        {
+          "name": "brain-secretary-dev",
+          "session_key": "agent:brain-secretary-dev:paperclip"
+        },
+        {
+          "name": "brain-secretary-review",
+          "session_key": "agent:brain-secretary-review:paperclip"
+        }
+      ]
+    },
+    "paperclip_public_proxy": {
+      "label": "Paperclip Public Viewer",
+      "description": "Nginx basic-auth protected Paperclip viewer",
+      "routes": {
+        "/": "http://127.0.0.1:3110"
       }
     }
   }

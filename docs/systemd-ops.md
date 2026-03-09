@@ -1,6 +1,6 @@
 # Linux 运维说明（systemd / nginx）
 
-> 更新：2026-03-07
+> 更新：2026-03-09
 > 当前现网：`qqbot/default -> qq-main`
 
 ---
@@ -9,6 +9,8 @@
 
 ```text
 QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents -> qq-main -> QQ Bot -> QQ
+
+可选控制面：Paperclip 内部运行在 `127.0.0.1:3110`，公网 viewer 经 `nginx` 暴露到 `3100`
 ```
 
 说明：
@@ -16,6 +18,8 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents -> qq-main -> QQ Bot -
 - `openclaw-gateway.service` 承载 OpenClaw 主网关与 `qqbot` 渠道
 - `qq-main` 负责理解用户意图、调度子 agent、验收结果、统一回复
 - `nginx` 监听公网 `http://110.41.170.155:80/`，把 `/` 代理到 OpenClaw 内部 `127.0.0.1:18789`
+- `paperclip.service` 作为 system service 运行在 `127.0.0.1:3110`
+- `nginx` 额外监听 `http://110.41.170.155:3100/`，反代到 Paperclip 并加 basic auth
 - 历史 `qq-bot(FastAPI Bridge)` / `NapCat` 链路已退役，相关 systemd 服务已停用
 
 ---
@@ -26,7 +30,8 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents -> qq-main -> QQ Bot -
 |---|---|---|---|
 | OpenClaw Model Proxy | `openclaw-model-proxy.service` | 模型代理 | - |
 | OpenClaw Gateway | `openclaw-gateway.service` | OpenClaw 主网关 + `qqbot` 渠道 | `18789` |
-| Public Proxy | `nginx.service` | 公网反代 | `80` |
+| Paperclip | `paperclip.service` | Paperclip 控制面 / issue / heartbeat | `3110` |
+| Public Proxy | `nginx.service` | OpenClaw + Paperclip 公网反代 | `80`, `3100` |
 
 ### 已退役服务
 
@@ -45,6 +50,7 @@ python3 scripts/ops_manager.py status all
 python3 scripts/ops_manager.py restart backend
 python3 scripts/ops_manager.py restart public_proxy
 python3 scripts/ops_manager.py logs gateway -n 80
+systemctl status paperclip.service
 openclaw channels list
 openclaw agents bindings --json
 ```
@@ -93,6 +99,7 @@ python3 scripts/ops_manager.py logs gateway -n 80
 
 ```bash
 systemctl --user status openclaw-model-proxy.service openclaw-gateway.service
+systemctl status paperclip.service
 systemctl status nginx
 ```
 
@@ -108,13 +115,15 @@ openclaw status
 ### 端口
 
 ```bash
-ss -lntp | rg ':80 |:18789 '
+ss -lntp | rg ':80 |:3100 |:3110 |:18789 '
 ```
 
 ### HTTP
 
 ```bash
 curl http://127.0.0.1:18789/
+curl http://127.0.0.1:3110/api/health
+source /root/.config/brain-secretary/paperclip-viewer.env && curl -u "$PAPERCLIP_VIEWER_USER:$PAPERCLIP_VIEWER_PASSWORD" http://127.0.0.1:3100/api/health
 curl -I http://110.41.170.155/
 curl -I http://110.41.170.155/chat-history
 ```
@@ -244,3 +253,26 @@ systemctl --user status openclaw-qq-bridge.service napcat-qq.service
 ```
 
 预期：`disabled / inactive (dead)`。
+
+
+## Paperclip viewer
+
+当前 Paperclip 相关文件与端口：
+
+- systemd unit：`paperclip.service`
+- 运行目录：`/home/paperclip/paperclip`
+- 数据目录：`/home/paperclip/paperclip-data`
+- 内部 API：`127.0.0.1:3110`
+- 公网 viewer：`110.41.170.155:3100`
+- nginx 配置：`/etc/nginx/sites-available/paperclip-public.conf`
+- viewer 凭据：`/root/.config/brain-secretary/paperclip-viewer.env`
+
+常用命令：
+
+```bash
+systemctl status paperclip.service
+journalctl -u paperclip.service -n 80 --no-pager
+python3 scripts/paperclip_seed.py --json
+python3 scripts/paperclip_cli.py status --json
+python3 scripts/paperclip_cli.py issues --json
+```

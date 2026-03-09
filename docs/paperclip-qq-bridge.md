@@ -1,144 +1,168 @@
-# Paperclip + QQ + OpenClaw 最小闭环
+# Paperclip + QQ + OpenClaw 闭环说明
 
-> 文档: `docs/paperclip-qq-bridge.md`
-> 更新: 2026-03-09
+> 文档：`docs/paperclip-qq-bridge.md`
+> 更新：2026-03-09
 
 ---
 
-## 目标
+## 当前部署形态
 
-这套接法不是把你现有的 QQ 入口推倒重来，而是：
-
-- QQ 继续作为唯一自然语言入口
-- OpenClaw 继续负责大脑 / 子 agent 协调
-- Paperclip 额外负责任务编排、issue 管理、heartbeat 唤醒
-
-也就是说：
+当前不是用 Paperclip 替代 OpenClaw，而是把 Paperclip 接在现有主入口后面，作为任务控制面与网页看板：
 
 ```text
-QQ -> OpenClaw(qq-main) -> brain-secretary-dev -> Paperclip -> OpenClaw Gateway Agents
+QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents
+                                                                       -> Paperclip 控制面 / 任务面板
 ```
 
-同时，老的 `qq-bot/` 辅助入口也新增了直接操作 Paperclip 的 `/pc-*` 指令，方便你做兼容联调。
+当前现网参数：
+
+- OpenClaw 主入口：`qqbot/default -> qq-main`
+- Paperclip 内部地址：`http://127.0.0.1:3110`
+- Paperclip 公网查看入口：`http://110.41.170.155:3100`
+- Paperclip 运行用户：`paperclip`
+- Paperclip 代码目录：`/home/paperclip/paperclip`
+- Paperclip 数据目录：`/home/paperclip/paperclip-data`
+- Paperclip viewer 凭据文件：`/root/.config/brain-secretary/paperclip-viewer.env`
+- 本机 QQ / CLI 桥接 env：`ops/paperclip.local.env`
 
 ---
 
-## 仓库里新增了什么
+## 当前闭环能力
 
-- Paperclip CLI：`scripts/paperclip_cli.py`
-- Paperclip bootstrap 脚本：`scripts/paperclip_bootstrap.sh`
-- QQ Bridge Paperclip 客户端：`qq-bot/bot/paperclip_client.py`
-- QQ Bridge Paperclip 命令：`qq-bot/bot/paperclip_commands.py`
-- 环境变量示例：`ops/paperclip.env.example`
+已经打通：
+
+- 本机 `QQ / CLI -> Paperclip` 走 `local_trusted`，默认不再依赖 agent key
+- Paperclip 自动创建 / 维护 3 个控制面 agent：
+  - `qq-main`
+  - `brain-secretary-dev`
+  - `brain-secretary-review`
+- 每个 Paperclip agent 都映射到对应 OpenClaw agent
+- Paperclip viewer 通过 `nginx + basic auth` 对外提供只读/可操作网页入口
+- QQ / CLI 的 `/pc-run` 会创建 `todo` issue，并自动触发对应 agent
+
+当前 OpenClaw gateway 适配器使用固定 session key，避免出现：
+
+```text
+agent "xxx" does not match session key agent "main"
+```
+
+固定规则为：
+
+- `qq-main` -> `agent:qq-main:paperclip`
+- `brain-secretary-dev` -> `agent:brain-secretary-dev:paperclip`
+- `brain-secretary-review` -> `agent:brain-secretary-review:paperclip`
 
 ---
 
-## 先把 Paperclip 拉下来
+## 一键部署步骤
+
+### 1) 拉起 Paperclip 代码与依赖
 
 ```bash
 bash scripts/paperclip_bootstrap.sh
 ```
 
-默认会：
+默认会准备：
 
-- 克隆 / 更新 `https://github.com/paperclipai/paperclip`
-- 安装依赖（走 `corepack pnpm`）
-- 生成本地运行用的 `.env.local`
+- 代码：`/home/paperclip/paperclip`
+- 数据：`/home/paperclip/paperclip-data`
+- 环境文件：`/home/paperclip/paperclip/.env.local`
 
-默认目录：
-
-- 代码：`/root/paperclip`
-- 数据：`/root/paperclip-data`
-
----
-
-## 本机启动 Paperclip
+### 2) 应用运行时与公网 viewer
 
 ```bash
-cd /root/paperclip
-set -a
-source .env.local
-set +a
-corepack pnpm dev:once
+bash scripts/paperclip_runtime_apply.sh
 ```
 
-默认监听：
+这个脚本会：
 
-- `http://127.0.0.1:3100`
+- 生成 / 修正 `.env.local`
+- 从已发布的 `@paperclipai/server` 包提取 `ui-dist`
+- 写入 `paperclip.service`
+- 写入 `nginx` 的 `paperclip-public.conf`
+- 生成 viewer basic auth 凭据
+- 启动 `paperclip.service`
+- 重载 `nginx`
 
-说明：
-
-- 这里默认用 `local_trusted`，适合先在服务器内网和 QQ / OpenClaw 做联调
-- 等你后面真要公网开放，再单独补认证和反代
-
----
-
-## QQ / CLI 怎么连 Paperclip
-
-推荐用环境变量，不要把真实 key 写进 Git：
+### 3) 初始化 company / agents / 本地 env
 
 ```bash
-export QQ_BOT_PAPERCLIP_ENABLED=true
-export QQ_BOT_PAPERCLIP_API_BASE_URL=http://127.0.0.1:3100
-export QQ_BOT_PAPERCLIP_COMPANY_ID=<paperclip-company-id>
-export QQ_BOT_PAPERCLIP_API_KEY=<paperclip-api-key>
-export QQ_BOT_PAPERCLIP_DEFAULT_ASSIGNEE_AGENT_ID=<paperclip-agent-id>
+python3 scripts/paperclip_seed.py --json
 ```
 
-如果你当前是本机 `local_trusted` 联调，也可以先不填 `QQ_BOT_PAPERCLIP_API_KEY`。
+这个脚本会：
+
+- 创建 / 复用 `Brain Secretary` company
+- 创建 / 修正 3 个 Paperclip agent
+- 给 `qq-main` 生成 agent key（保留给后续扩展）
+- 生成本机桥接 env：`ops/paperclip.local.env`
 
 ---
 
-## CLI 用法（给 OpenClaw agent / 终端 / 脚本调用）
+## 本机桥接规则
 
-查看状态：
+本机 `QQ / CLI / 脚本` 推荐直接走：
+
+```bash
+QQ_BOT_PAPERCLIP_ENABLED=true
+QQ_BOT_PAPERCLIP_API_BASE_URL=http://127.0.0.1:3110
+QQ_BOT_PAPERCLIP_COMPANY_ID=<company-id>
+QQ_BOT_PAPERCLIP_DEFAULT_ASSIGNEE_AGENT_ID=<agent-id>
+```
+
+默认 **不需要** `QQ_BOT_PAPERCLIP_API_KEY`，因为本机是 `local_trusted`。
+
+只有在你未来把调用端放到别的机器上时，才考虑额外发 agent key / cookie。
+
+---
+
+## 常用验证命令
+
+查看服务：
+
+```bash
+systemctl status paperclip.service
+curl http://127.0.0.1:3110/api/health
+```
+
+查看公网 viewer：
+
+```bash
+source /root/.config/brain-secretary/paperclip-viewer.env
+curl -u "$PAPERCLIP_VIEWER_USER:$PAPERCLIP_VIEWER_PASSWORD" http://127.0.0.1:3100/api/health
+```
+
+查看控制面：
 
 ```bash
 python3 scripts/paperclip_cli.py status --json
-```
-
-看 agent：
-
-```bash
 python3 scripts/paperclip_cli.py agents --json
-```
-
-看 issues：
-
-```bash
 python3 scripts/paperclip_cli.py issues --json
 ```
 
-创建 issue：
+创建并触发一个任务：
 
 ```bash
-python3 scripts/paperclip_cli.py create \
-  --title "检查 multimodal-retrieval 的测试失败原因" \
-  --description "先跑测试，再给修复建议" \
-  --agent brain-secretary-dev \
-  --json
+python3 scripts/paperclip_cli.py run   --agent brain-secretary-dev   --title "检查测试失败"   --description "先跑测试，再给建议"   --json
 ```
 
-创建并立即唤醒：
+查看执行日志：
 
 ```bash
-python3 scripts/paperclip_cli.py run \
-  --agent brain-secretary-dev \
-  --title "检查 multimodal-retrieval 的测试失败原因" \
-  --description "先跑测试，再给修复建议" \
-  --json
+curl http://127.0.0.1:3110/api/companies/<company-id>/heartbeat-runs?limit=10
+curl http://127.0.0.1:3110/api/heartbeat-runs/<run-id>/log
 ```
 
 ---
 
-## QQ Bridge 兼容指令
+## QQ 指令映射
 
-如果你走的是本仓库 `qq-bot/` 辅助入口，可以直接发：
+如果你走的是仓库里的辅助 `qq-bot/`，可直接发：
 
 - `/pc-status`
 - `/pc-agents`
 - `/pc-issues`
-- `/pc-issue PAP-39`
+- `/pc-issue BRA-4`
 - `/pc-new 标题|描述|agent`
 - `/pc-run agent|标题|描述`
 - `/pc-wake agent 原因`
@@ -152,37 +176,23 @@ python3 scripts/paperclip_cli.py run \
 
 ---
 
-## 和你当前主 QQ 入口怎么配合
+## 与主 QQ 入口的关系
 
-你现在正式入口是：
+你的正式消息入口仍然是：
 
 ```text
 qqbot/default -> qq-main
 ```
 
-这条链路本身不需要替换。
+Paperclip 不替代它，只提供：
 
-最推荐的做法是：
+- 网页任务面板
+- issue / run / wake 控制面
+- agent 执行日志与可视化
+- 未来的多项目任务池 / 审批 / 追踪
 
-1. 你继续在 QQ 里找 `qq-main`
-2. `qq-main` 把需要工程落地 / 调用 Paperclip 的事情派给 `brain-secretary-dev`
-3. `brain-secretary-dev` 直接在仓库里调用 `scripts/paperclip_cli.py`
-4. 结果再回给你
+所以最推荐的日常用法还是：
 
-这样你只有一个 QQ 入口，但后端已经多了一层 Paperclip 任务编排。
-
----
-
-## 推荐下一步
-
-如果你准备把 Paperclip 真接到现网协作闭环，下一步是：
-
-1. 启动 Paperclip
-2. 创建一个公司
-3. 在 Paperclip 里注册 3 个 `openclaw_gateway` agent：
-   - `qq-main`
-   - `brain-secretary-dev`
-   - `brain-secretary-review`
-4. 再让 QQ 指令直接创建 issue + wake agent
-
-等这一步做完，你的夜间巡检 / 方案派单 / 验收回收就更像真正的调度系统了。
+1. 你继续在 QQ 找 `qq-main`
+2. `qq-main` / 子 agent 在需要时调用 `scripts/paperclip_cli.py`
+3. 你同时可以在网页端看任务与运行日志

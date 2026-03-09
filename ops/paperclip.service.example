@@ -1,0 +1,17 @@
+[Unit]
+Description=Paperclip Service
+After=network.target
+
+[Service]
+Type=simple
+User=paperclip
+Group=paperclip
+WorkingDirectory=/home/paperclip/paperclip
+Environment=HOME=/home/paperclip
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/usr/bin/bash -lc 'set -a && source /home/paperclip/paperclip/.env.local && set +a && exec node server/node_modules/tsx/dist/cli.mjs server/src/index.ts'
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

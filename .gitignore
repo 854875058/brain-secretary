@@ -26,6 +26,7 @@ qq-bot/logs/
 .env.*
 !.env.example
 qq-bot/config.yaml
+ops/paperclip.local.env
 
 # Runtime data
 qq-bot/data/**
