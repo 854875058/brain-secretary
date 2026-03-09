@@ -249,7 +249,7 @@ python3 scripts/qq_bot_multi.py restart --json
 - 文档：`docs/project-sync-branch-workflow.md`
 - 双轨同步脚本：`scripts/project_sync.py`
 - 双轨配置：`ops/project-sync.json`
-- 自动进化配置：`ops/auto-evolve.json`
+- 自动进化配置：`ops/auto-evolve.json`（支持 `session_mode=fresh`，默认每轮 fresh session）
 - 自动进化守护脚本：`scripts/project_auto_evolve_daemon.py`
 - 自动进化安装脚本：`scripts/project_auto_evolve_apply.sh`
 - 主分支保护脚本：`scripts/git_branch_guard.py`

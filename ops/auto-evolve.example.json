@@ -6,6 +6,7 @@
       "registry_project": "Tower-Eye",
       "sync_project": "tower-eye",
       "session_id": "auto-evolve:tower-eye",
+      "session_mode": "fresh",
       "interval_minutes": 45,
       "timeout_seconds": 3600,
       "thinking": "low",

@@ -203,6 +203,13 @@ def commit_current_branch(path: Path, project_name: str, commit_message: str | N
     raise SyncError(f'{project_name} commit 失败: {(result.stderr or result.stdout).strip()}')
 
 
+def create_empty_commit(path: Path, commit_message: str) -> str:
+    result = run_git(path, 'commit', '--allow-empty', '-m', commit_message, check=False)
+    if result.returncode != 0:
+        raise SyncError(f'空提交失败: {(result.stderr or result.stdout).strip()}')
+    return git_stdout(path, 'rev-parse', 'HEAD')
+
+
 def divergence(path: Path, left_ref: str | None, right_ref: str | None) -> dict[str, Any] | None:
     if not left_ref or not right_ref:
         return None
@@ -383,6 +390,59 @@ def review_agent(project: dict[str, Any]) -> dict[str, Any]:
     return record
 
 
+def repair_boundaries(project: dict[str, Any], push: bool) -> dict[str, Any]:
+    path = project['path']
+    ensure_repo(path)
+    tree = working_tree_status(path)
+    if tree['dirty']:
+        raise SyncError(f"{project['name']} 工作区有未提交改动，无法自动修复分支边界")
+
+    remote = project['remote']
+    work_branch = project['work_branch']
+    agent_branch = project['agent_branch']
+
+    fetch_remote(path, remote)
+
+    work_remote_before = remote_branch_exists(path, remote, work_branch)
+    checkout_or_create_branch(path, remote, work_branch, start_ref=work_base_ref(project))
+    pull_branch(path, remote, work_branch, project['pull_rebase'])
+    work_pushed = False
+    if push and not work_remote_before:
+        work_pushed = push_branch(path, remote, work_branch)
+
+    agent_remote_before = remote_branch_exists(path, remote, agent_branch)
+    agent_start_ref = resolve_existing_ref(path, remote, work_branch, fallback=[work_base_ref(project)])
+    checkout_or_create_branch(path, remote, agent_branch, start_ref=agent_start_ref)
+    pull_branch(path, remote, agent_branch, project['pull_rebase'])
+    agent_pushed = False
+    if push and not agent_remote_before:
+        agent_pushed = push_branch(path, remote, agent_branch)
+
+    stable_ref = work_base_ref(project)
+    stable_commit = git_stdout(path, 'rev-parse', stable_ref)
+    work_commit = git_stdout(path, 'rev-parse', work_branch)
+    agent_commit = git_stdout(path, 'rev-parse', agent_branch)
+
+    checkpoint_created = False
+    checkpoint_commit = ''
+    if stable_commit == work_commit == agent_commit:
+        checkpoint_commit = create_empty_commit(path, f"chore: 初始化 {agent_branch} 隔离边界")
+        checkpoint_created = True
+        if push:
+            agent_pushed = push_branch(path, remote, agent_branch)
+
+    record = build_project_status(project, refresh=True)
+    record['repaired'] = True
+    record['work_branch_pushed'] = work_pushed
+    record['agent_branch_pushed'] = agent_pushed
+    record['checkpoint_created'] = checkpoint_created
+    record['checkpoint_commit'] = checkpoint_commit
+    record['stable_commit'] = stable_commit
+    record['work_commit'] = git_stdout(path, 'rev-parse', work_branch)
+    record['agent_commit'] = git_stdout(path, 'rev-parse', agent_branch)
+    return record
+
+
 def promote_agent(project: dict[str, Any], push: bool, commit_message: str | None) -> dict[str, Any]:
     path = project['path']
     ensure_repo(path)
@@ -490,7 +550,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='项目双轨分支同步工具')
     parser.add_argument(
         'action',
-        choices=['status', 'prepare', 'sync', 'update-work', 'prepare-work', 'sync-work', 'prepare-agent', 'sync-agent', 'review-agent', 'promote-agent'],
+        choices=['status', 'prepare', 'sync', 'update-work', 'prepare-work', 'sync-work', 'prepare-agent', 'sync-agent', 'review-agent', 'promote-agent', 'repair-boundaries'],
     )
     parser.add_argument('--config', default=str(DEFAULT_CONFIG), help='配置文件路径')
     parser.add_argument('--project', action='append', help='只处理指定 project，可重复传入')
@@ -526,6 +586,8 @@ def main() -> int:
         records = [sync_agent(project, args.commit, push=not args.no_push) for project in projects]
     elif action == 'review-agent':
         records = [review_agent(project) for project in projects]
+    elif action == 'repair-boundaries':
+        records = [repair_boundaries(project, push=not args.no_push) for project in projects]
     elif action == 'promote-agent':
         records = [promote_agent(project, push=not args.no_push, commit_message=args.commit) for project in projects]
     else:

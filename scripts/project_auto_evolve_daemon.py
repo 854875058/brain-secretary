@@ -27,6 +27,7 @@ DEFAULT_CONFIG_PATH = ROOT / 'ops' / 'auto-evolve.json'
 DEFAULT_SYNC_CONFIG_PATH = ROOT / 'ops' / 'project-sync.json'
 STATE_KEY = 'project_auto_evolve_v1'
 DEFAULT_AGENT_TIMEOUT_SECONDS = 3600
+DEFAULT_SESSION_MODE = 'fresh'
 
 
 class AutoEvolveError(RuntimeError):
@@ -65,6 +66,20 @@ def _github_repo_spec(repo_url: str) -> str:
     return text.split(marker, 1)[1]
 
 
+def _normalize_session_mode(value: Any) -> str:
+    normalized = str(value or '').strip().lower()
+    if normalized in {'fixed', 'reuse', 'sticky'}:
+        return 'fixed'
+    return DEFAULT_SESSION_MODE
+
+
+def _resolve_cycle_session_id(project_cfg: dict[str, Any], cycle_started_at: datetime) -> str:
+    base = str(project_cfg.get('session_id') or f"auto-evolve:{project_cfg['name']}").strip() or f"auto-evolve:{project_cfg['name']}"
+    if _normalize_session_mode(project_cfg.get('session_mode')) == 'fixed':
+        return base
+    return f"{base}:{cycle_started_at.strftime('%Y%m%dT%H%M%S')}"
+
+
 def _load_auto_config(path: Path) -> list[dict[str, Any]]:
     if not path.exists():
         raise AutoEvolveError(f'自动进化配置不存在: {path}')
@@ -86,6 +101,7 @@ def _load_auto_config(path: Path) -> list[dict[str, Any]]:
                 'registry_project': str(item.get('registry_project') or name).strip() or name,
                 'sync_project': str(item.get('sync_project') or name).strip() or name,
                 'session_id': str(item.get('session_id') or f'auto-evolve:{name}').strip(),
+                'session_mode': _normalize_session_mode(item.get('session_mode')),
                 'interval_minutes': max(5, int(item.get('interval_minutes') or 45)),
                 'timeout_seconds': max(120, int(item.get('timeout_seconds') or DEFAULT_AGENT_TIMEOUT_SECONDS)),
                 'thinking': str(item.get('thinking') or 'low').strip() or 'low',
@@ -252,6 +268,7 @@ async def run_project_cycle(project_cfg: dict[str, Any], *, sync_config: Path, d
 
     repo_path = _ensure_project_checkout(sync_item, registry_item)
     guard_info = _install_branch_guard(repo_path, project_cfg.get('protected_branches') or ['main'])
+    repair_record = _project_sync('repair-boundaries', project_cfg['sync_project'], sync_config, timeout=3600)
     prepare_record = _project_sync('prepare-agent', project_cfg['sync_project'], sync_config, timeout=3600)
     _project_sync('sync-work', project_cfg['sync_project'], sync_config, timeout=3600)
     _project_sync('sync-agent', project_cfg['sync_project'], sync_config, timeout=3600)
@@ -261,14 +278,19 @@ async def run_project_cycle(project_cfg: dict[str, Any], *, sync_config: Path, d
     project_state = dict((state.get('projects') or {}).get(project_cfg['name']) or {})
     prompt = _build_cycle_prompt(project_cfg, sync_item, registry_item, previous_state=project_state)
 
+    cycle_started_at = datetime.now().astimezone()
+    effective_session_id = _resolve_cycle_session_id(project_cfg, cycle_started_at)
     result: dict[str, Any] = {
         'project': project_cfg['name'],
         'repo_path': str(repo_path),
-        'session_id': project_cfg['session_id'],
+        'session_id': effective_session_id,
+        'session_id_base': project_cfg['session_id'],
+        'session_mode': project_cfg.get('session_mode') or DEFAULT_SESSION_MODE,
         'guard': guard_info,
+        'repair': repair_record,
         'prepared': prepare_record,
         'dry_run': dry_run,
-        'started_at': _now_iso(),
+        'started_at': cycle_started_at.isoformat(),
     }
     if dry_run:
         result['prompt_preview'] = prompt
@@ -280,7 +302,7 @@ async def run_project_cycle(project_cfg: dict[str, Any], *, sync_config: Path, d
         timeout_seconds=int(project_cfg.get('timeout_seconds') or DEFAULT_AGENT_TIMEOUT_SECONDS),
     )
     try:
-        turn = await client.agent_turn_result(project_cfg['session_id'], prompt)
+        turn = await client.agent_turn_result(effective_session_id, prompt)
         reply_text = str(turn.text or '').strip()
         auto_sync_record = _project_sync(
             'sync-agent',
@@ -298,6 +320,7 @@ async def run_project_cycle(project_cfg: dict[str, Any], *, sync_config: Path, d
                 'last_commit': _extract_commit_hash(reply_text) or '',
                 'last_status': 'ok',
                 'last_error': '',
+                'last_session_id': effective_session_id,
             }
         )
         state.setdefault('projects', {})[project_cfg['name']] = project_state
@@ -313,6 +336,7 @@ async def run_project_cycle(project_cfg: dict[str, Any], *, sync_config: Path, d
                 'last_finished_at': _now_iso(),
                 'last_status': 'error',
                 'last_error': str(exc),
+                'last_session_id': effective_session_id,
             }
         )
         state.setdefault('projects', {})[project_cfg['name']] = project_state

@@ -204,5 +204,6 @@ openclaw agents bindings --json
 - 当前 OpenClaw gateway session key 固定为：`agent:<openclaw_agent_id>:paperclip`
 - `qq-main` 只要调用了子 agent，自动投影服务就会把协同过程镜像成 Paperclip 父子 issue
 - 当前已新增项目 24 小时自动进化守护：按 `ops/auto-evolve.json` 周期性驱动 `qq-main` 主动巡检项目，并强制只在 agent 分支工作
+- 自动进化每轮默认使用 fresh session，并会在正式开跑前先修复 `main / work / agent` 边界，避免旧超时上下文和串分支
 - 投影 issue 默认不分配 assignee，只用于网页观战，避免在 Paperclip 里重复执行
 - 投影服务会忽略 Paperclip 自身 wake event，避免递归回灌

@@ -94,6 +94,7 @@ brain-secretary/
 - 想看 Windows 本地三开 QQ 对接 → `docs/windows-local-qq-multi.md`
 - 想看 Windows / 服务器项目双轨分支协作 → `docs/project-sync-branch-workflow.md`
 - 想开项目 24 小时自动进化 → `ops/auto-evolve.json`、`scripts/project_auto_evolve_daemon.py`、`scripts/project_auto_evolve_apply.sh`
+- 自动进化默认每轮 fresh session，并先修复 `main / work / agent` 分支边界，避免旧超时会话和串分支
 - 想把 Paperclip 接到 QQ / OpenClaw → `docs/paperclip-qq-bridge.md`
 - 想开启 QQ 协同自动投影 → `scripts/paperclip_projection_apply.sh`
 - 想在 Windows 双击一键生成配置 → `scripts/windows_local_qq_quick_setup.bat`

@@ -71,6 +71,7 @@
 - `sync-agent`
 - `review-agent`
 - `promote-agent`
+- `repair-boundaries`
 
 兼容旧命令：
 
@@ -219,6 +220,8 @@ bash scripts/project_auto_evolve_apply.sh
 
 它会自动：
 
+- 先自修 `main / work / agent` 的分支边界；若三者同头，会只在 `agent/<project>` 上补一笔隔离 checkpoint
+- 每轮使用 fresh session，避免被上一轮超时/卡住的上下文拖死
 - 先准备 `work/<project>` 和 `agent/<project>`
 - 确保主分支（如 `main`）被保护，不允许自动提交/推送
 - 驱动 `qq-main` 自己找活、派技术号、拉验收号、自动返工

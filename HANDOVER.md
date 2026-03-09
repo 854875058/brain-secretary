@@ -288,6 +288,7 @@ python3 scripts/napcat_multi.py qr --json
 - `Tower-Eye` 现已落盘到 `/root/projects/Tower-Eye`，双轨分支固定为 `work/tower-eye` + `agent/tower-eye`，并对 `main` 安装了提交/推送保护。
 - 对缺依赖、缺测试工具、仓库未克隆这类可恢复阻塞，默认由内部技术链路自己补齐；验收发现问题后，大脑应自动打回技术号继续修。
 - 夜间自动进化由 `openclaw-project-auto-evolve.service` 常驻驱动，默认只在 `agent/tower-eye` 上找活、改动、验收、提交。
+- 自动进化每轮默认 fresh session；开跑前先执行一次分支边界自修，避免 `main / work / agent` 再次串到同一个头上。
 
 
 ## Paperclip 当前状态
