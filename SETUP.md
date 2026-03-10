@@ -29,6 +29,9 @@ Windows 仍可手工启动，但以 Linux 常驻方案为主。
 
 配置位置：`/root/.openclaw/openclaw.json`
 
+当前主模型：`penguin/claude-sonnet-4-6`。
+备注：2026-03-10 已将默认模型从 `gpt-5.1` 切走，因为上游 distributor 连续返回 `503 No available channel for model gpt-5.1`。
+
 ---
 
 ## 前置条件

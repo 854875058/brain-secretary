@@ -241,18 +241,30 @@ openclaw agents bind --agent qq-main --bind qqbot:default
 
 ### 5) `qq-main` 能收消息但一直超时
 
-优先检查模型代理是否已经应用了流式兼容修复：
+先确认当前默认模型是否可用：
+
+```bash
+openclaw agent --agent qq-main --message '只回复一个字：到' --thinking low --timeout 45 --json
+```
+
+如果日志里出现：
+
+- `503 No available channel for model gpt-5.1 under group gpt (distributor)`
+
+说明是旧 GPT 通道或旧会话残留，不是 QQ 渠道本身故障。
+当前默认主模型已切到 `penguin/claude-sonnet-4-6`；如果还在报旧模型，优先检查 `/root/.openclaw/openclaw.json` 和相关 session 是否已刷新。
+
+如果怀疑是 OpenAI-compatible 备用链路问题，再检查模型代理兼容修复：
 
 ```bash
 systemctl --user status openclaw-model-proxy.service --no-pager -n 40
 curl -sS http://127.0.0.1:18080/healthz
-openclaw agent --agent qq-main --session-id qq-main-recover-test --message '只回复一个字：到' --thinking low --timeout 45 --json
 ```
 
-如果这里卡住，优先看 `/root/.openclaw/model-proxy.mjs` 是否仍会：
+此时重点看 `/root/.openclaw/model-proxy.mjs` 是否仍会：
 
 - 把 `stream=true` 转成上游 JSON 再回放 SSE
-- 把 `vllm/gpt-5.4` 改写成 `gpt-5.4`
+- 兼容历史 `vllm/gpt-5.4 -> gpt-5.4` 的模型改写
 
 ### 6) 想确认旧服务确实下线
 

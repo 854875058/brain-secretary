@@ -43,8 +43,10 @@
 - `qq-main.subagents.allowAgents`
 - `tools.agentToAgent.enabled=true`
 - `tools.sessions.visibility=all`
+- 当前默认模型为 `penguin/claude-sonnet-4-6`
+- 2026-03-10 起不再默认走 `gpt-5.1`，因为上游 distributor 多次返回 `503 No available channel for model gpt-5.1`
 - `model-proxy.mjs` 会把 OpenClaw 的流式请求转成上游 JSON 再回放为 SSE
-- `model-proxy.mjs` 会把 `vllm/gpt-5.4` 转成上游可识别的 `gpt-5.4`
+- `model-proxy.mjs` 的 `vllm/gpt-5.4 -> gpt-5.4` 改写保留为历史兼容逻辑，不是当前主链路依赖
 
 ---
 

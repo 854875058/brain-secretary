@@ -23,7 +23,7 @@
       "runtime": "OpenClaw Agent",
       "agent_id": "qq-main",
       "thinking": "low",
-      "model": "vllm/gpt-5.4",
+      "model": "penguin/claude-sonnet-4-6",
       "child_agents": [
         {
           "agent_id": "brain-secretary-dev",
@@ -40,11 +40,13 @@
       "channel_entry": "qqbot/default -> qq-main",
       "bindings": [
         "qqbot:default"
-      ]
+      ],
+      "provider_note": "2026-03-10 起默认从 gpt-5.1 切到 claude-sonnet-4-6，原因是上游 distributor 多次返回 503 No available channel"
     },
     "fallback_api": {
-      "runtime": "Penguin API",
-      "model": "claude-sonnet-4-6"
+      "runtime": "OpenAI-compatible distributor (optional)",
+      "model": "gpt-5.1",
+      "status": "unstable: upstream may return 503 No available channel"
     }
   },
   "paths": {

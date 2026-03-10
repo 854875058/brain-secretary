@@ -45,6 +45,8 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents -> qq-main -> QQ Bot -
 - `qq-main.subagents.allowAgents = ["brain-secretary-dev", "brain-secretary-review"]`
 - `tools.agentToAgent.allow = ["qq-main", "brain-secretary-dev", "brain-secretary-review"]`
 - `tools.sessions.visibility = "all"`
+- 当前默认模型：`penguin/claude-sonnet-4-6`
+- 2026-03-10 起不再默认走 `gpt-5.1`，因为上游 distributor 连续返回 `503 No available channel for model gpt-5.1`
 
 ---
 
@@ -117,12 +119,13 @@ systemctl --user restart openclaw-gateway.service
 
 ## 模型代理兼容修复
 
-当前 `/root/.openclaw/model-proxy.mjs` 额外承担两件兼容工作：
+当前主链路默认直接使用 `penguin/claude-sonnet-4-6`。
+`/root/.openclaw/model-proxy.mjs` 主要保留给 OpenAI-compatible 备用源做兼容，额外承担两件工作：
 
 - OpenClaw 发 `stream=true` 时，代理会改成上游 JSON 请求，再把返回结果回放成 SSE
-- OpenClaw 发 `vllm/gpt-5.4` 时，代理会自动改写为上游可识别的 `gpt-5.4`
+- 历史上如果使用 `vllm/gpt-5.4` 这类 OpenAI-compatible 模型别名，代理会自动改写为上游可识别的 `gpt-5.4`
 
-如果 QQ 渠道能收消息但长时间不回，优先先检查这里。
+如果 QQ 渠道能收消息但长时间不回，先看当前默认模型是否可用；若日志里出现 `No available channel for model gpt-5.1`，说明是旧 GPT 通道/旧会话残留问题，不是 QQ 渠道本身故障。
 
 ---
 
