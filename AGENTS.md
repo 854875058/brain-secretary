@@ -47,6 +47,8 @@
 
 - 本仓库默认维护为独立 GitHub 仓库，优先只提交 `/root/brain-secretary` 内的代码与文档。
 - 不要把 `/root/.openclaw`、`/root/Napcat`、日志、数据库、收件箱、虚拟环境和本地密钥提交到远端。
+- 开始工程实施前，如果当前仓库工作区干净，优先先 fast-forward 拉取一次最新代码；如果工作区不干净，先汇报状态，不要直接 `pull` 覆盖本地改动。
+- Windows 本地长期自动拉取主仓时，优先使用：`scripts/windows_repo_autopull.ps1` 或 `scripts/windows_repo_autopull.bat`
 - 完成代码或文档修改后，如果用户没有明确禁止，必须执行：`bash scripts/git_sync.sh -m "<类型: 中文说明本次修改内容>"`
 - 是否自动推送由仓库配置 `brain.autopush` 控制；开启后 post-commit hook 会自动尝试推送 `origin`。
 - 账号、远端、代理、hook 初始化优先使用：`bash scripts/git_bootstrap.sh`

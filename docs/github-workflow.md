@@ -1,7 +1,7 @@
 # GitHub 维护工作流
 
 > 文档: `docs/github-workflow.md`
-> 更新: 2026-03-07
+> 更新: 2026-03-10
 
 ---
 
@@ -92,6 +92,35 @@ bash scripts/git_sync.sh -m "chore: 初始化仓库并导入当前代码"
 ```bash
 git push -u origin main
 ```
+
+---
+
+## Windows 主仓自动拉取
+
+如果你在 Windows 本地经常手工 `pull` 主仓，可以直接复用仓库里的自动拉取脚本：
+
+- `scripts/windows_repo_autopull.ps1`：PowerShell 版，支持单次执行或常驻轮询
+- `scripts/windows_repo_autopull.bat`：双击启动入口，默认每 300 秒检查一次
+
+单次安全拉取（工作区有未提交改动时会跳过）：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\windows_repo_autopull.ps1 -Once
+```
+
+常驻自动拉取：
+
+```bat
+scripts\windows_repo_autopull.bat 300
+```
+
+脚本行为约定：
+
+- 每轮先检查工作区是否干净；有未提交改动就跳过本轮拉取，避免覆盖本地修改
+- 实际拉取使用 `git pull --ff-only`，避免自动生成 merge commit
+- 每次 Git 调用都附带临时 `safe.directory`，适配 Windows 本地管理员 / 沙箱用户混用时的所有权校验
+
+如果你希望它在后台定时执行，可以把上面的 `-Once` 命令注册到 Windows 任务计划程序，例如每 10 分钟执行一次。
 
 ---
 
