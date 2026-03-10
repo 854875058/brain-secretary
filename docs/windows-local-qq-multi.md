@@ -178,11 +178,41 @@ python3 scripts/qq_bot_multi.py status --json
 ## 核心脚本
 
 - Windows 一键入口：`scripts/windows_local_qq_quick_setup.bat`
+- Windows 全流程一键入口：`scripts/windows_local_qq_connect_remote.bat`
 - Windows 脚手架：`scripts/windows_local_qq_multi.ps1`
+- Windows 全流程脚本：`scripts/windows_local_qq_connect_remote.ps1`
 - Windows 自检脚本：`scripts/windows_local_qq_doctor.ps1`
 - Windows 自检批处理：`scripts/windows_local_qq_doctor.bat`
 - Windows 远程应用脚本：`scripts/windows_local_qq_remote_apply.ps1`
 - 服务器多桥接：`scripts/qq_bot_multi.py`
+
+## 一键全流程（推荐）
+
+如果你希望“本机生成配置 + 自检 +（可选）远程应用”一次跑完，直接用：
+
+```bat
+scripts\windows_local_qq_connect_remote.bat
+```
+
+或手动调用 PowerShell 版本：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/windows_local_qq_connect_remote.ps1 `
+  -ServerBridgeHost <服务器 Host> `
+  -ServerSshTarget <root@server>
+```
+
+脚本默认行为：
+
+- 先调用 `windows_local_qq_multi.ps1` 生成本地三开配置
+- 再调用 `windows_local_qq_doctor.ps1` 做本地+服务端端口自检
+- 如果提供 `-ServerSshTarget`，再自动调用 `windows_local_qq_remote_apply.ps1` 上传 profile 并在服务端执行导入/重启/状态检查
+
+可选参数：
+
+- `-SkipDoctor`：跳过自检
+- `-SkipRemoteApply`：即使填写了 `ServerSshTarget` 也不自动远程应用
+- `-NoOpenOutput`：生成后不自动打开输出目录
 
 `qq_bot_multi.py` 现在支持：
 
