@@ -20,7 +20,8 @@ function Get-TailscaleIPv4 {
                 return $text
             }
         }
-    } catch {
+    }
+    catch {
     }
     return ""
 }
@@ -48,7 +49,7 @@ if (-not $LocalNapCatHost) {
 }
 
 if (-not $LocalNapCatHost) {
-    throw "未能自动识别本机 Tailscale IPv4，请手动传入 -LocalNapCatHost。"
+    throw "Failed to detect local Tailscale IPv4. Please pass -LocalNapCatHost explicitly."
 }
 
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
@@ -58,21 +59,21 @@ $RemoteApplyScriptPath = Join-Path $PSScriptRoot "windows_local_qq_remote_apply.
 $instances = @(
     [ordered]@{
         slug = "brain"
-        role = "大脑号"
+        role = "brain"
         agent_id = "qq-main"
         onebot_port = 3001
         bridge_port = 8011
     },
     [ordered]@{
         slug = "tech"
-        role = "技术号"
+        role = "tech"
         agent_id = "brain-secretary-dev"
         onebot_port = 3002
         bridge_port = 8012
     },
     [ordered]@{
         slug = "review"
-        role = "方案验收号"
+        role = "review"
         agent_id = "brain-secretary-review"
         onebot_port = 3003
         bridge_port = 8013
@@ -101,7 +102,7 @@ foreach ($inst in $instances) {
             port = $inst.onebot_port
             post = @(
                 [ordered]@{
-                    url = "http://$ServerBridgeHost:$($inst.bridge_port)/qq/message"
+                    url = "http://${ServerBridgeHost}:$($inst.bridge_port)/qq/message"
                     secret = ""
                 }
             )
@@ -125,10 +126,10 @@ foreach ($inst in $instances) {
         slug = $inst.slug
         role = $inst.role
         agent_id = $inst.agent_id
-        server_bridge_url = "http://$ServerBridgeHost:$($inst.bridge_port)/qq/message"
+        server_bridge_url = "http://${ServerBridgeHost}:$($inst.bridge_port)/qq/message"
         local_napcat_api = "http://127.0.0.1:$($inst.onebot_port)"
-        local_napcat_tailscale_api = "http://$LocalNapCatHost:$($inst.onebot_port)"
-        note = "把 onebot11.json 放进这个 QQ 实例对应的 NapCat 配置目录。"
+        local_napcat_tailscale_api = "http://${LocalNapCatHost}:$($inst.onebot_port)"
+        note = "Put this onebot11.json into the corresponding local NapCat instance config directory."
     }
 
     $onebotPath = Join-Path $instanceDir "onebot11.json"
@@ -153,10 +154,10 @@ $serverProfile | ConvertTo-Json -Depth 10 | Set-Content -Path $serverProfilePath
 
 $serverApplyPath = Join-Path $OutputRoot "server-apply.txt"
 @"
-把生成的 server-bridge-profile.json 复制到服务器仓库中，例如：
+Copy generated server-bridge-profile.json to server repo, for example:
   /root/brain-secretary/ops/windows-local-qq-profile.json
 
-然后在服务器执行：
+Then run on server:
   cd /root/brain-secretary
   python3 scripts/qq_bot_multi.py import-profile --profile ops/windows-local-qq-profile.json --json
   python3 scripts/qq_bot_multi.py restart --json
@@ -170,7 +171,7 @@ Write-WindowsBat -PathText $doctorBatPath -Lines @(
     ('powershell -ExecutionPolicy Bypass -File "{0}" -ServerBridgeHost "{1}" -LocalNapCatHost "{2}" -OutputRoot "{3}"' -f $DoctorScriptPath, $ServerBridgeHost, $LocalNapCatHost, $OutputRoot),
     'set "EXITCODE=%ERRORLEVEL%"',
     'echo.',
-    'if %EXITCODE% NEQ 0 echo 检查里有告警，先看上面的输出再处理。',
+    'if %EXITCODE% NEQ 0 echo Doctor checks reported warnings. Review output above first.',
     'pause',
     'exit /b %EXITCODE%'
 )
@@ -188,18 +189,18 @@ Write-WindowsBat -PathText $remoteApplyBatPath -Lines @(
     ('powershell -ExecutionPolicy Bypass -File "{0}" -OutputRoot "{1}" -LocalProfilePath "{2}"' -f $RemoteApplyScriptPath, $OutputRoot, $serverProfilePath),
     'set "EXITCODE=%ERRORLEVEL%"',
     'echo.',
-    'if %EXITCODE% NEQ 0 echo 远程应用失败，请先看上面的报错。',
+    'if %EXITCODE% NEQ 0 echo Remote apply failed. Review output above.',
     'pause',
     'exit /b %EXITCODE%'
 )
 
 $readmePath = Join-Path $OutputRoot "README.local.md"
 @"
-# Windows 本地三开 QQ / NapCat 脚手架
+# Windows Local QQ/NapCat Scaffold
 
-生成时间：$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+Generated at: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 
-## 你现在手里有什么
+## Files
 
 - `instances/brain/onebot11.json`
 - `instances/tech/onebot11.json`
@@ -210,52 +211,33 @@ $readmePath = Join-Path $OutputRoot "README.local.md"
 - `open-output.bat`
 - `apply-remote.bat`
 
-## 最省事的用法
+## Quick steps
 
-1. 先双击 `open-output.bat` 打开这个目录。
-2. 把 3 份 `onebot11.json` 分别塞进 3 个本地 QQ / NapCat 实例。
-3. 登录 3 个本地 QQ 号。
-4. 配完后双击 `run-doctor.bat` 做本地自检。
-5. 如果你本机能直接 SSH 到服务器，双击 `apply-remote.bat` 自动上传并应用。
-6. 如果不用自动应用，再手动把 `server-bridge-profile.json` 交给服务器侧导入。
+1. Open this folder via `open-output.bat`.
+2. Put the three `onebot11.json` files into three local NapCat instances.
+3. Log in the three local QQ accounts.
+4. Run `run-doctor.bat` for local checks.
+5. If SSH to server is available, run `apply-remote.bat`.
 
-## 本地要做的事
-
-1. 先确保你的 Windows 和服务器在同一个 Tailscale 网络。
-2. 把 3 个 `onebot11.json` 分别放到 3 个本地 QQ / NapCat 实例对应的配置目录。
-3. 让 3 个本地 QQ 实例分别登录：
-   - brain -> 大脑号
-   - tech -> 技术号
-   - review -> 方案验收号
-4. 确认本机端口 `3001/3002/3003` 都能监听。
-5. 把 `server-bridge-profile.json` 交给服务器侧应用。
-
-## 生成参数
+## Parameters
 
 - RepoRoot: $RepoRoot
 - ServerBridgeHost: $ServerBridgeHost
 - LocalNapCatHost: $LocalNapCatHost
 - OutputRoot: $OutputRoot
 
-## 每个实例的桥接目标
+## Bridge targets
 
 - brain -> http://$ServerBridgeHost:8011/qq/message
 - tech -> http://$ServerBridgeHost:8012/qq/message
 - review -> http://$ServerBridgeHost:8013/qq/message
-
-## 建议
-
-- 本地 QQ / NapCat 请优先跑在你常用的 Windows 电脑上，不要再放云服务器扫码。
-- 如果本机 Tailscale IP 变化，重新运行本脚本，再把新的 `server-bridge-profile.json` 应用到服务器。
-- `run-doctor.bat` 是你后面最好用的排障入口，先看它的输出再看别的。
-- `apply-remote.bat` 会调用仓库里的 `windows_local_qq_remote_apply.ps1`，适合你本机能 SSH 服务器的场景。
 "@ | Set-Content -Path $readmePath -Encoding UTF8
 
-Write-Host "已生成 Windows 本地三开 QQ 脚手架： $OutputRoot"
-Write-Host "本机 NapCat Host: $LocalNapCatHost"
-Write-Host "服务器桥接 Host: $ServerBridgeHost"
-Write-Host "仓库根目录: $RepoRoot"
-Write-Host "下一步先看： $readmePath"
+Write-Host "Generated Windows local QQ scaffold: $OutputRoot"
+Write-Host "Local NapCat Host: $LocalNapCatHost"
+Write-Host "Server Bridge Host: $ServerBridgeHost"
+Write-Host "RepoRoot: $RepoRoot"
+Write-Host "Readme: $readmePath"
 
 if ($OpenOutput) {
     Start-Process explorer.exe $OutputRoot | Out-Null
