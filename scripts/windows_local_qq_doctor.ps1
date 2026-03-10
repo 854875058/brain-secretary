@@ -17,7 +17,8 @@ function Get-TailscaleIPv4 {
                 return $text
             }
         }
-    } catch {
+    }
+    catch {
     }
     return ""
 }
@@ -34,7 +35,8 @@ function Test-TcpPort([string]$HostName, [int]$Port, [int]$TimeoutMs = 2000) {
         $client.EndConnect($async)
         $client.Close()
         return $true
-    } catch {
+    }
+    catch {
         return $false
     }
 }
@@ -57,13 +59,13 @@ if (-not $LocalNapCatHost) {
     $LocalNapCatHost = Get-TailscaleIPv4
 }
 
-Add-Check -Name "output_root" -Ok (Test-Path -LiteralPath $OutputRoot) -Detail "输出目录: $OutputRoot"
-Add-Check -Name "tailscale_ip" -Ok (-not [string]::IsNullOrWhiteSpace($LocalNapCatHost)) -Detail $(if ($LocalNapCatHost) { "本机 Tailscale IPv4: $LocalNapCatHost" } else { "未检测到本机 Tailscale IPv4" })
+Add-Check -Name "output_root" -Ok (Test-Path -LiteralPath $OutputRoot) -Detail "OutputRoot: $OutputRoot"
+Add-Check -Name "local_ip" -Ok (-not [string]::IsNullOrWhiteSpace($LocalNapCatHost)) -Detail $(if ($LocalNapCatHost) { "LocalNapCatHost: $LocalNapCatHost" } else { "LocalNapCatHost not detected" })
 
 $requiredFiles = @(
-    "instances\\brain\\onebot11.json",
-    "instances\\tech\\onebot11.json",
-    "instances\\review\\onebot11.json",
+    "instances\brain\onebot11.json",
+    "instances\tech\onebot11.json",
+    "instances\review\onebot11.json",
     "server-bridge-profile.json",
     "README.local.md",
     "run-doctor.bat",
@@ -73,7 +75,7 @@ $requiredFiles = @(
 foreach ($relative in $requiredFiles) {
     $fullPath = Join-Path $OutputRoot $relative
     $exists = Test-Path -LiteralPath $fullPath
-    Add-Check -Name "file:$relative" -Ok $exists -Detail $(if ($exists) { "存在: $fullPath" } else { "缺失: $fullPath" })
+    Add-Check -Name "file:$relative" -Ok $exists -Detail $(if ($exists) { "exists: $fullPath" } else { "missing: $fullPath" })
 }
 
 $profilePath = Join-Path $OutputRoot "server-bridge-profile.json"
@@ -83,23 +85,25 @@ if (Test-Path -LiteralPath $profilePath) {
         $profileHost = [string]$profile.napcat_host
         $match = (-not $LocalNapCatHost) -or ($profileHost -eq $LocalNapCatHost)
         Add-Check -Name "profile:napcat_host" -Ok $match -Detail "profile.napcat_host=$profileHost"
-    } catch {
-        Add-Check -Name "profile:parse" -Ok $false -Detail "解析 server-bridge-profile.json 失败: $($_.Exception.Message)"
+    }
+    catch {
+        Add-Check -Name "profile:parse" -Ok $false -Detail "Failed to parse profile: $($_.Exception.Message)"
     }
 }
 
 foreach ($port in @(3001, 3002, 3003)) {
     $ok = Test-TcpPort -HostName "127.0.0.1" -Port $port
-    Add-Check -Name "local_port:$port" -Ok $ok -Detail $(if ($ok) { "127.0.0.1:$port 可连通" } else { "127.0.0.1:$port 未监听，先确认对应 NapCat 实例是否启动" })
+    Add-Check -Name "local_port:$port" -Ok $ok -Detail $(if ($ok) { "127.0.0.1:$port reachable" } else { "127.0.0.1:$port not listening" })
 }
 
 if ($ServerBridgeHost) {
     foreach ($port in @(8011, 8012, 8013)) {
         $ok = Test-TcpPort -HostName $ServerBridgeHost -Port $port
-        Add-Check -Name "server_bridge:$port" -Ok $ok -Detail $(if ($ok) { "$ServerBridgeHost:$port 可连通" } else { "$ServerBridgeHost:$port 不通，先检查服务器桥接是否已 import-profile 并 restart" })
+        Add-Check -Name "server_bridge:$port" -Ok $ok -Detail $(if ($ok) { "${ServerBridgeHost}:$port reachable" } else { "${ServerBridgeHost}:$port unreachable (check import-profile + restart on server)" })
     }
-} else {
-    Add-Check -Name "server_bridge_host" -Ok $true -Detail "未提供 ServerBridgeHost，已跳过服务器 8011/8012/8013 连通性检查"
+}
+else {
+    Add-Check -Name "server_bridge_host" -Ok $true -Detail "ServerBridgeHost not provided; skipped 8011/8012/8013 checks"
 }
 
 $failed = @($Checks | Where-Object { -not $_.ok }).Count
@@ -121,7 +125,7 @@ if ($Json) {
     exit 0
 }
 
-Write-Host "Windows 本地 QQ / NapCat 自检"
+Write-Host "Windows local QQ/NapCat doctor"
 Write-Host "OutputRoot: $OutputRoot"
 if ($LocalNapCatHost) {
     Write-Host "LocalNapCatHost: $LocalNapCatHost"
@@ -138,9 +142,9 @@ foreach ($check in $Checks) {
 
 Write-Host ""
 if ($failed -gt 0) {
-    Write-Host "共有 $failed 项告警，先按上面的提示处理。"
+    Write-Host "Doctor found $failed warning(s)."
     exit 1
 }
 
-Write-Host "全部检查通过，可以继续把 profile 导入服务器。"
+Write-Host "All checks passed."
 exit 0
