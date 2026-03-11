@@ -276,6 +276,7 @@ python3 scripts/project_sync.py promote-agent --config ops/project-sync.json --p
 
 ```bash
 python3 scripts/project_auto_evolve_daemon.py status --json
+python3 scripts/project_auto_evolve_daemon.py doctor --json
 python3 scripts/project_auto_evolve_daemon.py watchdog --json
 python3 scripts/project_auto_evolve_daemon.py once --project tower-eye --dry-run --json
 python3 scripts/project_auto_evolve_daemon.py once --project tower-eye --json
@@ -283,6 +284,7 @@ bash scripts/project_auto_evolve_apply.sh
 ```
 
 `project_auto_evolve_apply.sh` 会自动补齐 / 校正 `auto-evolve-main`、校验 OpenClaw 配置并重启 gateway。
+`doctor` 会一次汇总守护服务状态、`qq-main` 会话污染看门狗，以及零副作用 `dry-run` 预演，适合故障后先做自检。
 守护现在自带 `qq-main` 主会话污染看门狗；如果检测到自动进化前缀重新占用 `qq-main` 主会话，会自动熔断跳过本轮。
 `once --dry-run` 是零副作用预演，不会修改仓库或安装 hook。
 

@@ -157,6 +157,7 @@
         "python3 scripts/ops_manager.py logs paperclip_projection -n 80",
         "python3 scripts/reconcile_auto_evolve_agent.py --json",
         "python3 scripts/project_auto_evolve_daemon.py status --json",
+        "python3 scripts/project_auto_evolve_daemon.py doctor --json",
         "python3 scripts/project_auto_evolve_daemon.py watchdog --json",
         "python3 scripts/project_auto_evolve_daemon.py once --project tower-eye --json",
         "bash scripts/project_auto_evolve_apply.sh",

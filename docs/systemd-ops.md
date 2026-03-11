@@ -59,6 +59,7 @@ python3 scripts/ops_manager.py restart public_proxy
 python3 scripts/ops_manager.py logs gateway -n 80
 python3 scripts/ops_manager.py logs paperclip_projection -n 80
 python3 scripts/ops_manager.py logs project_auto_evolve -n 80
+python3 scripts/project_auto_evolve_daemon.py doctor --json
 python3 scripts/project_auto_evolve_daemon.py watchdog --json
 systemctl status paperclip.service
 openclaw channels list
@@ -264,9 +265,12 @@ openclaw agent --agent qq-main --message '只回复一个字：到' --thinking l
 如果你想让自动进化自己先做健康检查，再看是否需要真正开跑，可先执行：
 
 ```bash
+python3 scripts/project_auto_evolve_daemon.py doctor --json
 python3 scripts/project_auto_evolve_daemon.py watchdog --json
 python3 scripts/project_auto_evolve_daemon.py once --project tower-eye --dry-run --json
 ```
+
+`doctor` 会优先检查 `project_auto_evolve` 服务状态，再检查 `qq-main` 会话污染看门狗，最后附带零副作用 `dry-run` 预演结果。
 
 如果怀疑是 OpenAI-compatible 备用链路问题，再检查模型代理兼容修复：
 

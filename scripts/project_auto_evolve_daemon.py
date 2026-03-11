@@ -61,6 +61,33 @@ def _run_json(cmd: list[str], *, cwd: Path | None = None, timeout: int = 1800) -
     return json.loads(output) if output else None
 
 
+def _load_json_loose(output: str) -> Any:
+    text = str(output or '').strip()
+    if not text:
+        return None
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    for line in reversed(lines):
+        try:
+            return json.loads(line)
+        except json.JSONDecodeError:
+            continue
+
+    for index, char in enumerate(text):
+        if char not in '[{':
+            continue
+        candidate = text[index:].strip()
+        try:
+            return json.loads(candidate)
+        except json.JSONDecodeError:
+            continue
+    raise json.JSONDecodeError('No JSON object could be decoded from output', text, 0)
+
+
 def _github_repo_spec(repo_url: str) -> str:
     text = str(repo_url or '').strip().rstrip('/')
     marker = 'github.com/'
@@ -199,7 +226,7 @@ def _run_openclaw_json(args: list[str], *, timeout: int = 180) -> Any:
             timeout=timeout,
         )
     output = (result.stdout or '').strip()
-    return json.loads(output) if output else None
+    return _load_json_loose(output) if output else None
 
 
 def _session_items(payload: Any) -> list[dict[str, Any]]:
@@ -350,6 +377,63 @@ def _merge_watchdog_state(state: dict[str, Any], report: dict[str, Any]) -> dict
         watchdog_state['last_tripped_at'] = report.get('checked_at')
     state['watchdog'] = watchdog_state
     return state
+
+
+def _doctor_check(name: str, status: str, detail: str, **extra: Any) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        'name': name,
+        'status': status,
+        'detail': detail,
+    }
+    payload.update(extra)
+    return payload
+
+
+def _project_auto_evolve_service_payload() -> dict[str, Any]:
+    try:
+        from ops_manager import OpsManager
+    except Exception as exc:
+        return {
+            'component': 'project_auto_evolve',
+            'platform': 'windows' if os.name == 'nt' else 'linux',
+            'available_on_platform': None,
+            'status': 'failed',
+            'error': str(exc),
+            'message': 'failed to load ops manager',
+        }
+
+    manager = OpsManager()
+    platform_components = manager.platform_cfg.get('components') or {}
+    if 'project_auto_evolve' not in platform_components:
+        return {
+            'component': 'project_auto_evolve',
+            'platform': manager.platform,
+            'available_on_platform': False,
+            'status': 'skipped',
+            'message': f'component not declared on {manager.platform}',
+        }
+
+    try:
+        item = manager.component_status('project_auto_evolve')
+    except Exception as exc:
+        return {
+            'component': 'project_auto_evolve',
+            'platform': manager.platform,
+            'available_on_platform': True,
+            'status': 'failed',
+            'error': str(exc),
+            'message': 'failed to inspect project_auto_evolve service',
+        }
+
+    state = dict(item.get('state') or {})
+    active = str(state.get('active') or '').strip()
+    return {
+        **item,
+        'platform': manager.platform,
+        'available_on_platform': True,
+        'status': 'ok' if active == 'active' else 'failed',
+        'message': f"active={state.get('active')} enabled={state.get('enabled')} pid={state.get('pid')}",
+    }
 
 
 def _ensure_project_checkout(sync_item: dict[str, Any], registry_item: dict[str, Any]) -> Path:
@@ -583,6 +667,135 @@ def watchdog_payload(config_path: Path) -> dict[str, Any]:
     return _build_watchdog_report(_load_auto_config(config_path))
 
 
+async def doctor_payload(config_path: Path, sync_config: Path, selected: list[str] | None = None) -> dict[str, Any]:
+    enabled_projects = [item for item in _load_auto_config(config_path) if item.get('enabled', True)]
+    selected_projects = [item for item in _filter_projects(config_path, selected) if item.get('enabled', True)]
+    sync_map = _load_project_sync_map(sync_config)
+    watchdog = _build_watchdog_report(enabled_projects)
+    service = _project_auto_evolve_service_payload()
+    dry_runs: list[dict[str, Any]] = []
+    checks: list[dict[str, Any]] = []
+
+    if selected_projects:
+        checks.append(
+            _doctor_check(
+                'projects',
+                'ok',
+                f"selected {len(selected_projects)} enabled project(s): {', '.join(item['name'] for item in selected_projects)}",
+                projects=[item['name'] for item in selected_projects],
+            )
+        )
+    else:
+        checks.append(
+            _doctor_check(
+                'projects',
+                'failed',
+                'no enabled projects matched current selection',
+                projects=[],
+            )
+        )
+
+    checks.append(
+        _doctor_check(
+            'service:project_auto_evolve',
+            service.get('status') if service.get('status') in {'ok', 'failed', 'skipped'} else 'failed',
+            str(service.get('message') or '').strip() or 'service status unavailable',
+            platform=service.get('platform'),
+            component=service.get('component'),
+        )
+    )
+    checks.append(
+        _doctor_check(
+            'watchdog',
+            'ok' if watchdog.get('status') == 'ok' else 'failed',
+            str(watchdog.get('message') or '').strip() or 'watchdog status unavailable',
+            brain_session_id=((watchdog.get('qq_main') or {}).get('session_id') or ''),
+            violations=len(watchdog.get('violations') or []),
+        )
+    )
+
+    for project_cfg in selected_projects:
+        sync_item = sync_map.get(project_cfg['sync_project']) or {}
+        repo_path_text = str(sync_item.get('path') or '').strip()
+        repo_path = Path(repo_path_text).expanduser() if repo_path_text else None
+        before_repo_exists = repo_path.exists() if repo_path else None
+        before_git_exists = (repo_path / '.git').exists() if repo_path else None
+        try:
+            dry_run_payload = await run_project_cycle(
+                project_cfg,
+                sync_config=sync_config,
+                dry_run=True,
+                watchdog_report=watchdog,
+            )
+        except Exception as exc:
+            after_repo_exists = repo_path.exists() if repo_path else None
+            after_git_exists = (repo_path / '.git').exists() if repo_path else None
+            dry_run_payload = {
+                'project': project_cfg['name'],
+                'repo_path': str(repo_path) if repo_path else '',
+                'status': 'error',
+                'error': str(exc),
+                'repo_exists_before': before_repo_exists,
+                'repo_exists_after': after_repo_exists,
+                'git_exists_before': before_git_exists,
+                'git_exists_after': after_git_exists,
+                'side_effect_free': before_repo_exists == after_repo_exists and before_git_exists == after_git_exists,
+            }
+            dry_runs.append(dry_run_payload)
+            checks.append(
+                _doctor_check(
+                    f"dry_run:{project_cfg['name']}",
+                    'failed',
+                    str(exc),
+                    repo_path=dry_run_payload.get('repo_path'),
+                )
+            )
+            continue
+
+        actual_repo_path_text = str(dry_run_payload.get('repo_path') or repo_path_text).strip()
+        actual_repo_path = Path(actual_repo_path_text).expanduser() if actual_repo_path_text else None
+        after_repo_exists = actual_repo_path.exists() if actual_repo_path else None
+        after_git_exists = (actual_repo_path / '.git').exists() if actual_repo_path else None
+        side_effect_free = before_repo_exists == after_repo_exists and before_git_exists == after_git_exists
+        dry_run_payload['repo_exists_before'] = before_repo_exists
+        dry_run_payload['repo_exists_after'] = after_repo_exists
+        dry_run_payload['git_exists_before'] = before_git_exists
+        dry_run_payload['git_exists_after'] = after_git_exists
+        dry_run_payload['side_effect_free'] = side_effect_free
+        dry_runs.append(dry_run_payload)
+        checks.append(
+            _doctor_check(
+                f"dry_run:{project_cfg['name']}",
+                'ok' if dry_run_payload.get('status') == 'dry_run' and side_effect_free else 'failed',
+                (
+                    f"status={dry_run_payload.get('status')} side_effect_free={side_effect_free} "
+                    f"repo_exists={before_repo_exists}->{after_repo_exists} git_exists={before_git_exists}->{after_git_exists}"
+                ),
+                repo_path=actual_repo_path_text,
+                session_id=dry_run_payload.get('session_id'),
+            )
+        )
+
+    failed = len([item for item in checks if item.get('status') == 'failed'])
+    passed = len([item for item in checks if item.get('status') == 'ok'])
+    skipped = len([item for item in checks if item.get('status') == 'skipped'])
+    return {
+        'checked_at': _now_iso(),
+        'config_path': str(config_path),
+        'sync_config': str(sync_config),
+        'selected_projects': [item['name'] for item in selected_projects],
+        'service': service,
+        'watchdog': watchdog,
+        'dry_run': dry_runs,
+        'checks': checks,
+        'passed': passed,
+        'failed': failed,
+        'skipped': skipped,
+        'status': 'ok' if failed == 0 else 'failed',
+        'message': 'doctor ok' if failed == 0 else f'doctor found {failed} failing check(s)',
+    }
+
+
 async def watch_projects(config_path: Path, sync_config: Path, poll_seconds: int, dry_run: bool = False) -> None:
     if not dry_run:
         await init_db()
@@ -616,7 +829,7 @@ async def watch_projects(config_path: Path, sync_config: Path, poll_seconds: int
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='项目 24 小时自动进化守护脚本')
-    parser.add_argument('action', choices=['status', 'watchdog', 'once', 'watch'])
+    parser.add_argument('action', choices=['status', 'watchdog', 'doctor', 'once', 'watch'])
     parser.add_argument('--config', default=str(DEFAULT_CONFIG_PATH), help='自动进化配置路径')
     parser.add_argument('--sync-config', default=str(DEFAULT_SYNC_CONFIG_PATH), help='项目双轨配置路径')
     parser.add_argument('--project', action='append', help='只运行指定项目')
@@ -649,6 +862,11 @@ def main() -> int:
         payload = watchdog_payload(config_path)
         print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else json.dumps(payload, ensure_ascii=False, indent=2))
         return 0 if payload.get('status') == 'ok' else 2
+
+    if args.action == 'doctor':
+        payload = asyncio.run(doctor_payload(config_path, sync_config, args.project))
+        print(json.dumps(payload, ensure_ascii=False, indent=2) if args.json else json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0 if payload.get('failed') == 0 else 2
 
     if args.action == 'once':
         projects = [item for item in _filter_projects(config_path, args.project) if item.get('enabled', True)]
