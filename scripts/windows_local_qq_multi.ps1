@@ -33,7 +33,12 @@ function Ensure-Dir([string]$PathText) {
 }
 
 function Write-Utf8File([string]$PathText, [string]$Content) {
-    Set-Content -Path $PathText -Value $Content -Encoding UTF8
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($PathText, $Content, $utf8NoBom)
+}
+
+function Write-JsonFile([string]$PathText, $Value, [int]$Depth = 10) {
+    Write-Utf8File -PathText $PathText -Content (($Value | ConvertTo-Json -Depth $Depth) + "`n")
 }
 
 function Write-WindowsBat([string]$PathText, [string[]]$Lines) {
@@ -135,8 +140,8 @@ foreach ($inst in $instances) {
     $onebotPath = Join-Path $instanceDir "onebot11.json"
     $bridgeInfoPath = Join-Path $instanceDir "bridge-info.json"
 
-    $onebotConfig | ConvertTo-Json -Depth 10 | Set-Content -Path $onebotPath -Encoding UTF8
-    $bridgeInfo | ConvertTo-Json -Depth 10 | Set-Content -Path $bridgeInfoPath -Encoding UTF8
+    Write-JsonFile -PathText $onebotPath -Value $onebotConfig
+    Write-JsonFile -PathText $bridgeInfoPath -Value $bridgeInfo
 
     $serverProfile.instances += [ordered]@{
         slug = $inst.slug
@@ -150,7 +155,7 @@ foreach ($inst in $instances) {
 }
 
 $serverProfilePath = Join-Path $OutputRoot $ServerProfileFileName
-$serverProfile | ConvertTo-Json -Depth 10 | Set-Content -Path $serverProfilePath -Encoding UTF8
+Write-JsonFile -PathText $serverProfilePath -Value $serverProfile
 
 $serverApplyPath = Join-Path $OutputRoot "server-apply.txt"
 @"
@@ -162,7 +167,7 @@ Then run on server:
   python3 scripts/qq_bot_multi.py import-profile --profile ops/windows-local-qq-profile.json --json
   python3 scripts/qq_bot_multi.py restart --json
   python3 scripts/qq_bot_multi.py status --json
-"@ | Set-Content -Path $serverApplyPath -Encoding UTF8
+"@ | ForEach-Object { Write-Utf8File -PathText $serverApplyPath -Content $_ }
 
 $doctorBatPath = Join-Path $OutputRoot "run-doctor.bat"
 Write-WindowsBat -PathText $doctorBatPath -Lines @(
@@ -231,7 +236,7 @@ Generated at: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 - brain -> http://$ServerBridgeHost:8011/qq/message
 - tech -> http://$ServerBridgeHost:8012/qq/message
 - review -> http://$ServerBridgeHost:8013/qq/message
-"@ | Set-Content -Path $readmePath -Encoding UTF8
+"@ | ForEach-Object { Write-Utf8File -PathText $readmePath -Content $_ }
 
 Write-Host "Generated Windows local QQ scaffold: $OutputRoot"
 Write-Host "Local NapCat Host: $LocalNapCatHost"
