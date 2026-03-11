@@ -59,6 +59,7 @@ python3 scripts/ops_manager.py restart public_proxy
 python3 scripts/ops_manager.py logs gateway -n 80
 python3 scripts/ops_manager.py logs paperclip_projection -n 80
 python3 scripts/ops_manager.py logs project_auto_evolve -n 80
+python3 scripts/project_auto_evolve_daemon.py watchdog --json
 systemctl status paperclip.service
 openclaw channels list
 openclaw agents bindings --json
@@ -260,6 +261,12 @@ openclaw agent --agent qq-main --message '只回复一个字：到' --thinking l
 
 说明是旧 GPT 通道或旧会话残留，不是 QQ 渠道本身故障。
 当前默认主模型已切到 `penguin/claude-sonnet-4-6`；如果还在报旧模型，优先检查 `/root/.openclaw/openclaw.json` 和相关 session 是否已刷新。
+如果你想让自动进化自己先做健康检查，再看是否需要真正开跑，可先执行：
+
+```bash
+python3 scripts/project_auto_evolve_daemon.py watchdog --json
+python3 scripts/project_auto_evolve_daemon.py once --project tower-eye --dry-run --json
+```
 
 如果怀疑是 OpenAI-compatible 备用链路问题，再检查模型代理兼容修复：
 
