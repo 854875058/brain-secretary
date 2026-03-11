@@ -1,4 +1,4 @@
-﻿---
+---
 name: codex-remote
 description: 当用户要远程控制服务器上的 Codex CLI、查看或驱动 tmux 里的 `codex` 会话、向 Codex 发送任务、读取 Codex 输出、批准 Codex 继续、停止 Codex、查看 Codex 当前做到哪一步时使用。适用于“让 Codex 看下/改下/跑下”“查看 Codex 现在状态”“给 Codex 发一句话”“帮我替 Codex 回车/发 y”等请求。
 ---
