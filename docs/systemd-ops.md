@@ -18,10 +18,11 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents -> qq-main -> QQ Bot -
 
 - `openclaw-gateway.service` 承载 OpenClaw 主网关与 `qqbot` 渠道
 - `qq-main` 负责理解用户意图、调度子 agent、验收结果、统一回复
+- `auto-evolve-main` 是自动进化专用内部协调 agent，不承接 QQ 入口流量
 - `nginx` 监听公网 `http://110.41.170.155:80/`，把 `/` 代理到 OpenClaw 内部 `127.0.0.1:18789`
 - `paperclip.service` 作为 system service 运行在 `127.0.0.1:3110`
-- `openclaw-paperclip-projection.service` 作为 systemd user service，持续把 `qq-main` 子 agent 协同投影到 Paperclip
-- `openclaw-project-auto-evolve.service` 作为 systemd user service，周期性驱动 `qq-main` 对注册项目执行 24 小时自动进化
+- `openclaw-paperclip-projection.service` 作为 systemd user service，持续把 `qq-main` / `auto-evolve-main` 子 agent 协同投影到 Paperclip
+- `openclaw-project-auto-evolve.service` 作为 systemd user service，周期性驱动 `auto-evolve-main` 对注册项目执行 24 小时自动进化
 - `nginx` 在 `http://110.41.170.155/paperclip/` 提供 Paperclip viewer，并加 basic auth
 - `nginx` 仍保留 `http://110.41.170.155:3100/` 直连监听，但当前云侧端口未放行，公网通常超时
 - 历史 `qq-bot(FastAPI Bridge)` / `NapCat` 链路已退役，相关 systemd 服务已停用
@@ -35,8 +36,8 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents -> qq-main -> QQ Bot -
 | OpenClaw Model Proxy | `openclaw-model-proxy.service` | 模型代理 | - |
 | OpenClaw Gateway | `openclaw-gateway.service` | OpenClaw 主网关 + `qqbot` 渠道 | `18789` |
 | Paperclip | `paperclip.service` | Paperclip 控制面 / issue / heartbeat | `3110` |
-| Projection | `openclaw-paperclip-projection.service` | 自动投影 `qq-main` 子 agent 协同到 Paperclip | - |
-| Auto Evolve | `openclaw-project-auto-evolve.service` | 周期性驱动 `qq-main` 在 agent 分支上自动巡检/改进项目 | - |
+| Projection | `openclaw-paperclip-projection.service` | 自动投影 `qq-main` / `auto-evolve-main` 子 agent 协同到 Paperclip | - |
+| Auto Evolve | `openclaw-project-auto-evolve.service` | 周期性驱动 `auto-evolve-main` 在 agent 分支上自动巡检/改进项目 | - |
 | Public Proxy | `nginx.service` | OpenClaw 根路径 + Paperclip `/paperclip/` + 3100 直连 | `80`, `3100` |
 
 ### 已退役服务
@@ -148,6 +149,7 @@ curl -I http://110.41.170.155/chat-history
 ### 改了 `/root/.openclaw/openclaw.json`
 
 ```bash
+python3 scripts/reconcile_auto_evolve_agent.py --json
 openclaw config validate
 systemctl --user restart openclaw-gateway.service
 ```
@@ -241,7 +243,12 @@ openclaw agents bind --agent qq-main --bind qqbot:default
 
 ### 5) `qq-main` 能收消息但一直超时
 
-先确认当前默认模型是否可用：
+先确认 `qq-main` 没有再被自动进化错误占用主会话，然后再检查默认模型是否可用：
+
+```bash
+openclaw sessions --agent qq-main --json
+```
+
 
 ```bash
 openclaw agent --agent qq-main --message '只回复一个字：到' --thinking low --timeout 45 --json

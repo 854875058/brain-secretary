@@ -32,8 +32,10 @@
 ## 当前多 Agent 规则
 
 - QQ 入口 agent 统一为 `qq-main`
+- `auto-evolve-main` 是自动进化专用内部协调 agent，只给守护脚本 / 定时任务使用
 - 本仓库对应的工程子 agent 是 `brain-secretary-dev`
 - 不要把 `qq-bot/config.yaml` 里的 `openclaw.agent_id` 改离 `qq-main`，除非明确重构入口架构
+- 不要让 `project_auto_evolve` 直接占用 `qq-main` 主会话；自动进化统一走 `auto-evolve-main`
 
 ## 汇报格式
 
@@ -42,6 +44,12 @@
 - 改了哪些文件
 - 做了哪些验证
 - 当前还有什么风险/待办
+
+## 修复与验证规则
+
+- 修复 / 热修 / 恢复类任务默认直接动手，不要为明显修复动作反复追问用户
+- 先完成自验证，再向用户汇报“已修复 / 已恢复 / 已可用”
+- 未经验证，不要把推测、计划或未落地动作表述成完成事实
 
 ## Git 维护规则
 

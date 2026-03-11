@@ -35,7 +35,7 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents
 已经打通：
 
 - 本机 `QQ / CLI -> Paperclip` 走 `local_trusted`，默认不再依赖 agent key
-- `openclaw-paperclip-projection.service` 会自动把 `qq-main` 的子 agent 协同投影为 Paperclip 父子 issue
+- `openclaw-paperclip-projection.service` 会自动把 `qq-main` / `auto-evolve-main` 的子 agent 协同投影为 Paperclip 父子 issue
 - 投影 issue 默认不分配 assignee，只作为网页观战面板，避免在 Paperclip 里重复执行
 - 投影服务会忽略 Paperclip 自身 wake event，避免出现投影套投影
 - Paperclip 自动创建 / 维护 3 个控制面 agent：
@@ -114,7 +114,7 @@ bash scripts/paperclip_projection_apply.sh
 
 - 安装 `openclaw-paperclip-projection.service` 到 `~/.config/systemd/user/`
 - 开机自启并立即拉起自动投影守护进程
-- 持续扫描 `qq-main` 转录，把真实子 agent 协同镜像到 Paperclip
+- 持续扫描 `qq-main` / `auto-evolve-main` 转录，把真实子 agent 协同镜像到 Paperclip
 - 默认以纯展示 issue 形式写入，不会再次唤醒 Paperclip agent
 
 ---

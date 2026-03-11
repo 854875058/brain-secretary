@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 > 本文件给后续助手 / Claude / Codex / 自动化运维流程读取。
-> 更新: 2026-03-07
+> 更新: 2026-03-11
 
 ---
 
@@ -25,6 +25,7 @@
 ### 当前 agent 拓扑
 
 - `qq-main`：总协调大脑，workspace=`/root/.openclaw/workspace`
+- `auto-evolve-main`：自动进化专用内部协调 agent，workspace=`/root/.openclaw/workspace`
 - `brain-secretary-dev`：主项目工程子 agent，workspace=`/root/brain-secretary`
 - `brain-secretary-review`：方案 / 验收子 agent，workspace=`/root/brain-secretary`
 
@@ -32,6 +33,7 @@
 
 - 当前主 QQ 消息链路：`QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents`，子 agent 协同会自动投影到 Paperclip 父子 issue
 - 当前显式绑定：`qqbot:default -> qq-main`
+- 自动进化内部链路：`openclaw-project-auto-evolve.service -> OpenClaw(auto-evolve-main) -> 子 agents`
 - 辅助多 QQ 链路：`NapCat(instance) -> QQ Bridge(instance) -> OpenClaw(target agent)`
 - 不要为了“省事”把 OpenClaw 原生主入口直接切到子 agent，那会破坏统一协调层
 - 仓库里的 `qq-bot/` 仍不是现网主入口，但现在作为多扫码 QQ 辅助入口重新启用
@@ -39,6 +41,7 @@
 ### 协调规则
 
 - `qq-main` 负责：理解意图、拆任务、派任务、验收结果、统一回复
+- `auto-evolve-main` 负责：按 `ops/auto-evolve.json` 周期性驱动注册项目做内部自动进化，但不承接 QQ 入口流量
 - `brain-secretary-dev` 负责主仓工程实施：OpenClaw 接入、运维脚本、部署文档、现网迁移与工程改造
 - 旧的次级实验仓已退役；如需旧实现对照，直接参考历史资料，不再派发到独立次仓。
 
@@ -54,7 +57,9 @@
 - `channels.qqbot.markdownSupport = false`
 - `plugins.installs.qqbot.spec = "@openclaw-china/qqbot"`
 - `qq-main.subagents.allowAgents = ["brain-secretary-dev", "brain-secretary-review"]`
+- `auto-evolve-main.subagents.allowAgents = ["brain-secretary-dev", "brain-secretary-review"]`
 - `tools.agentToAgent.enabled = true`
+- `tools.agentToAgent.allow = ["qq-main", "auto-evolve-main", "brain-secretary-dev", "brain-secretary-review"]`
 - `tools.sessions.visibility = "all"`
 - `agents.defaults.subagents.*` 已配置并发、超时、归档等默认值
 - 当前默认模型为 `penguin/claude-sonnet-4-6`
@@ -151,13 +156,19 @@
 
 ## QQ 自助进化入口
 
-- 现网 QQ 入口已切换到 OpenClaw `qqbot` 渠道，因此实际自助进化闭环由 `qq-main` + 子 agent 完成
+- 现网 QQ 入口已切换到 OpenClaw `qqbot` 渠道；QQ 实时对话仍由 `qq-main` 协调，项目自动进化闭环改由 `auto-evolve-main` + 子 agent 完成
 - `qq-main` 收到“自助进化 / 记住这个 / 写进规则 / 完成一件告诉我一件”这类诉求时，应优先：
   - 拆解任务
   - 必要时委派 `brain-secretary-dev`
   - 完成后回推进展
   - 把长期结论固化到规则 / 记忆 / 文档
 - 仓库里的 `qq-bot` 自助进化实现已转为历史实现，不再作为现网入口依赖
+
+## 修复 / 热修默认动作
+
+- 修复 / 恢复类任务默认先直接动手，不要为明显修复动作反复追问用户
+- 修完后必须先自验证，再对外汇报“已修复 / 已恢复 / 已可用”
+- 未经验证，不要把计划、推测或未执行动作表述成完成事实
 
 ## 统一入口
 
@@ -205,8 +216,8 @@ openclaw agents bindings --json
 - 本机 `QQ / CLI -> Paperclip` 默认走 `local_trusted`，不再依赖本地 agent key
 - 当前 Paperclip 控制面 agent：`qq-main`、`brain-secretary-dev`、`brain-secretary-review`
 - 当前 OpenClaw gateway session key 固定为：`agent:<openclaw_agent_id>:paperclip`
-- `qq-main` 只要调用了子 agent，自动投影服务就会把协同过程镜像成 Paperclip 父子 issue
-- 当前已新增项目 24 小时自动进化守护：按 `ops/auto-evolve.json` 周期性驱动 `qq-main` 主动巡检项目，并强制只在 agent 分支工作
+- `qq-main` / `auto-evolve-main` 只要调用了子 agent，自动投影服务就会把协同过程镜像成 Paperclip 父子 issue
+- 当前已新增项目 24 小时自动进化守护：按 `ops/auto-evolve.json` 周期性驱动 `auto-evolve-main` 主动巡检项目，并强制只在 agent 分支工作
 - 自动进化每轮默认使用 fresh session，并会在正式开跑前先修复 `main / work / agent` 边界，避免旧超时上下文和串分支
 - 投影 issue 默认不分配 assignee，只用于网页观战，避免在 Paperclip 里重复执行
 - 投影服务会忽略 Paperclip 自身 wake event，避免递归回灌

@@ -22,10 +22,12 @@ Windows 仍可手工启动，但以 Linux 常驻方案为主。
 | agent id | 角色 | workspace |
 |---|---|---|
 | `qq-main` | 协调大脑 | `/root/.openclaw/workspace` |
+| `auto-evolve-main` | 自动进化专用内部协调 agent | `/root/.openclaw/workspace` |
 | `brain-secretary-dev` | 主项目工程子 agent | `/root/brain-secretary` |
 | `brain-secretary-review` | 方案 / 验收子 agent | `/root/brain-secretary` |
 
 当前 QQ 渠道绑定：`qqbot:default -> qq-main`。
+自动进化内部链路：`openclaw-project-auto-evolve.service -> auto-evolve-main -> 子 agents`。
 
 配置位置：`/root/.openclaw/openclaw.json`
 
@@ -270,13 +272,15 @@ python3 scripts/project_sync.py sync-agent --config ops/project-sync.json --proj
 python3 scripts/project_sync.py review-agent --config ops/project-sync.json --project multimodal-retrieval
 python3 scripts/project_sync.py promote-agent --config ops/project-sync.json --project multimodal-retrieval
 
-如果你想让服务器上的 `qq-main` 24 小时自动给某个项目找活 / 改代码 / 验收下一轮，可以再启用：
+如果你想让服务器上的 `auto-evolve-main` 24 小时自动给某个项目找活 / 改代码 / 验收下一轮，可以再启用：
 
 ```bash
 python3 scripts/project_auto_evolve_daemon.py status --json
 python3 scripts/project_auto_evolve_daemon.py once --project tower-eye --json
 bash scripts/project_auto_evolve_apply.sh
 ```
+
+`project_auto_evolve_apply.sh` 会自动补齐 / 校正 `auto-evolve-main`、校验 OpenClaw 配置并重启 gateway。
 
 当前现成示例已经为 `Tower-Eye` 配好：
 

@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import os
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -11,7 +12,7 @@ from typing import Any
 
 from bot.chat_history import AgentCollaborationRecord, load_agent_collaboration_records, normalize_text, parse_log_timestamp
 from bot.paperclip_client import PaperclipClient, PaperclipError
-from bot.runtime_paths import OPENCLAW_TRANSCRIPT_DIR, ensure_runtime_dirs
+from bot.runtime_paths import OPENCLAW_TRANSCRIPT_DIR, OPENCLAW_TRANSCRIPT_DIRS, ensure_runtime_dirs
 from bot.task_db import get_bridge_state_value, init_db, set_bridge_state_value
 
 logger = logging.getLogger(__name__)
@@ -189,7 +190,7 @@ def _render_parent_description(records: list[AgentCollaborationRecord]) -> str:
     lines = [
         '# QQ 自动投影协同',
         '',
-        '- 投影来源: OpenClaw `qq-main` 子 agent 协作转录',
+        '- 投影来源: OpenClaw `qq-main` / `auto-evolve-main` 子 agent 协作转录',
         f'- 来源请求: {_trim(lead.source_user_text or lead.task_text or "(未提取到)", 300)}',
         f'- 来源时间: {lead.source_user_time or lead.event_time or ""}',
         f'- 主会话: {lead.transcript_session_id or ""}',
@@ -296,9 +297,34 @@ def _filter_bootstrap_records(records: list[AgentCollaborationRecord], bootstrap
     return filtered
 
 
+def _resolve_transcript_dirs(transcript_dir: Any = None) -> list[Path]:
+    if transcript_dir is None:
+        candidates = list(OPENCLAW_TRANSCRIPT_DIRS)
+    elif isinstance(transcript_dir, (str, Path)):
+        raw = str(transcript_dir).strip()
+        if not raw:
+            candidates = list(OPENCLAW_TRANSCRIPT_DIRS)
+        elif os.pathsep in raw:
+            candidates = [Path(item).expanduser() for item in raw.split(os.pathsep) if str(item).strip()]
+        else:
+            candidates = [Path(raw).expanduser()]
+    else:
+        candidates = [Path(item).expanduser() for item in transcript_dir if str(item).strip()]
+
+    resolved: list[Path] = []
+    seen: set[str] = set()
+    for candidate in candidates or [OPENCLAW_TRANSCRIPT_DIR]:
+        normalized = str(candidate)
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        resolved.append(candidate)
+    return resolved or [OPENCLAW_TRANSCRIPT_DIR]
+
+
 async def sync_projection_once(
     *,
-    transcript_dir: str | Path | None = None,
+    transcript_dir: Any = None,
     limit: int = DEFAULT_LIMIT,
     bootstrap_hours: int = DEFAULT_BOOTSTRAP_HOURS,
     dry_run: bool = False,
@@ -310,20 +336,26 @@ async def sync_projection_once(
     if not client.configured:
         raise PaperclipError('Paperclip 未启用或未配置，无法做自动投影')
 
-    transcript_base = Path(transcript_dir or OPENCLAW_TRANSCRIPT_DIR)
-    if not transcript_base.exists():
-        raise PaperclipError(f'转录目录不存在: {transcript_base}')
+    transcript_bases = [item for item in _resolve_transcript_dirs(transcript_dir) if item.exists()]
+    if not transcript_bases:
+        raise PaperclipError(
+            '转录目录不存在: ' + ', '.join(str(item) for item in _resolve_transcript_dirs(transcript_dir))
+        )
 
     state = _clean_state(await get_bridge_state_value(PROJECTOR_STATE_KEY))
     first_sync = not state.get('bootstrapped_at')
     stats.first_sync = first_sync
 
-    session_ids = sorted(path.stem for path in transcript_base.glob('*.jsonl'))
-    records = load_agent_collaboration_records(transcript_base, session_ids, limit=max(10, limit))
+    records: list[AgentCollaborationRecord] = []
+    for transcript_base in transcript_bases:
+        session_ids = sorted(path.stem for path in transcript_base.glob('*.jsonl'))
+        records.extend(load_agent_collaboration_records(transcript_base, session_ids, limit=max(10, limit)))
     if first_sync:
         records = _filter_bootstrap_records(records, bootstrap_hours)
     collapsed_records = _filter_projectable_records(_collapse_records(records))
     collapsed_records.sort(key=lambda item: _safe_log_time(item.event_time) or datetime.min)
+    if limit > 0:
+        collapsed_records = collapsed_records[-max(10, limit):]
     stats.scanned_records = len(collapsed_records)
 
     grouped: dict[str, list[AgentCollaborationRecord]] = {}
@@ -477,12 +509,14 @@ async def sync_projection_once(
         state['bootstrapped_at'] = state.get('bootstrapped_at') or _now_iso()
         state['last_sync_at'] = _now_iso()
         await set_bridge_state_value(PROJECTOR_STATE_KEY, state)
-    return stats.to_dict()
+    payload = stats.to_dict()
+    payload['transcript_dirs'] = [str(item) for item in transcript_bases]
+    return payload
 
 
 async def watch_projection(
     *,
-    transcript_dir: str | Path | None = None,
+    transcript_dir: Any = None,
     limit: int = DEFAULT_LIMIT,
     bootstrap_hours: int = DEFAULT_BOOTSTRAP_HOURS,
     interval_seconds: int = 15,

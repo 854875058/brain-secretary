@@ -15,7 +15,8 @@
       ],
       "goal": "持续寻找高价值、低风险、可验证的小步改进，并只落到 agent 分支。",
       "validation_hint": "优先跑项目已有测试；没有就跑受影响模块最小验证。",
-      "commit_prefix": "chore: 夜间自动进化"
+      "commit_prefix": "chore: 夜间自动进化",
+      "agent_id": "auto-evolve-main"
     }
   ]
 }

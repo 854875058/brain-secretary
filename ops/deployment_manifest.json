@@ -1,7 +1,7 @@
 {
   "project": {
     "name": "Brain Secretary",
-    "service_chain": "QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> child agents -> auto evolve daemon -> Paperclip control plane + projection",
+    "service_chain": "QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> child agents; auto evolve daemon -> OpenClaw(auto-evolve-main) -> child agents -> Paperclip control plane + projection",
     "repo_root": ".",
     "primary_docs": {
       "handover": "HANDOVER.md",
@@ -16,7 +16,8 @@
     "auto_evolve_daemon_script": "scripts/project_auto_evolve_daemon.py",
     "auto_evolve_apply_script": "scripts/project_auto_evolve_apply.sh",
     "auto_evolve_systemd_unit": "ops/systemd/openclaw-project-auto-evolve.service",
-    "branch_guard_script": "scripts/git_branch_guard.py"
+    "branch_guard_script": "scripts/git_branch_guard.py",
+    "auto_evolve_reconcile_script": "scripts/reconcile_auto_evolve_agent.py"
   },
   "models": {
     "primary_brain": {
@@ -47,6 +48,27 @@
       "runtime": "OpenAI-compatible distributor (optional)",
       "model": "gpt-5.1",
       "status": "unstable: upstream may return 503 No available channel"
+    },
+    "auto_evolve_brain": {
+      "runtime": "OpenClaw Agent",
+      "agent_id": "auto-evolve-main",
+      "thinking": "low",
+      "model": "penguin/claude-sonnet-4-6",
+      "role": "internal auto-evolve coordinator",
+      "workspace": "/root/.openclaw/workspace",
+      "child_agents": [
+        {
+          "agent_id": "brain-secretary-dev",
+          "workspace": "/root/brain-secretary",
+          "role": "primary engineering subagent"
+        },
+        {
+          "agent_id": "brain-secretary-review",
+          "workspace": "/root/brain-secretary",
+          "role": "review and acceptance subagent"
+        }
+      ],
+      "note": "must not be bound to qqbot/default; reserved for project auto evolve only"
     }
   },
   "paths": {
@@ -133,6 +155,7 @@
         "bash scripts/paperclip_projection_apply.sh",
         "python3 scripts/paperclip_projection_daemon.py once --json",
         "python3 scripts/ops_manager.py logs paperclip_projection -n 80",
+        "python3 scripts/reconcile_auto_evolve_agent.py --json",
         "python3 scripts/project_auto_evolve_daemon.py status --json",
         "python3 scripts/project_auto_evolve_daemon.py once --project tower-eye --json",
         "bash scripts/project_auto_evolve_apply.sh",
@@ -160,6 +183,11 @@
               "agent_id": "qq-main",
               "workspace": "/root/.openclaw/workspace",
               "role": "brain"
+            },
+            {
+              "agent_id": "auto-evolve-main",
+              "workspace": "/root/.openclaw/workspace",
+              "role": "auto_evolve_brain"
             },
             {
               "agent_id": "brain-secretary-dev",
@@ -222,13 +250,17 @@
         "paperclip_projection": {
           "unit": "openclaw-paperclip-projection.service",
           "script": "/root/brain-secretary/scripts/paperclip_projection_daemon.py",
-          "transcript_dir": "/root/.openclaw/agents/qq-main/sessions"
+          "transcript_dirs": [
+            "/root/.openclaw/agents/qq-main/sessions",
+            "/root/.openclaw/agents/auto-evolve-main/sessions"
+          ]
         },
         "project_auto_evolve": {
           "unit": "openclaw-project-auto-evolve.service",
           "script": "/root/brain-secretary/scripts/project_auto_evolve_daemon.py",
           "config_path": "/root/brain-secretary/ops/auto-evolve.json",
-          "project_sync_config": "/root/brain-secretary/ops/project-sync.json"
+          "project_sync_config": "/root/brain-secretary/ops/project-sync.json",
+          "agent_id": "auto-evolve-main"
         }
       },
       "extra_locations": {
@@ -432,11 +464,11 @@
     },
     "paperclip_projection": {
       "label": "Paperclip Collaboration Projection",
-      "description": "Auto-project qq-main subagent collaboration into read-only Paperclip parent/child issues"
+      "description": "Auto-project qq-main and auto-evolve-main subagent collaboration into read-only Paperclip parent/child issues"
     },
     "project_auto_evolve": {
       "label": "Project Auto Evolution Daemon",
-      "description": "Continuously drives qq-main to evolve registered projects on agent branches only"
+      "description": "Continuously drives auto-evolve-main to evolve registered projects on agent branches only"
     }
   }
 }

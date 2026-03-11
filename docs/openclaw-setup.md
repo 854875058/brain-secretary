@@ -10,6 +10,7 @@
 | agent id | 角色 | workspace | 说明 |
 |---|---|---|---|
 | `qq-main` | 协调大脑 | `/root/.openclaw/workspace` | 负责理解用户意图、调度子 agent、验收结果、统一回复 |
+| `auto-evolve-main` | 自动进化专用内部协调 agent | `/root/.openclaw/workspace` | 负责自动进化守护的内部巡检 / 改造 / 验收闭环 |
 | `brain-secretary-dev` | 主项目工程子 agent | `/root/brain-secretary` | 负责主仓工程实施与部署变更 |
 | `brain-secretary-review` | 方案 / 验收子 agent | `/root/brain-secretary` | 负责方案补充、验收视角与第二意见 |
 
@@ -43,7 +44,8 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents -> qq-main -> QQ Bot -
 - `channels.qqbot.markdownSupport = false`
 - `plugins.installs.qqbot.spec = "@openclaw-china/qqbot"`
 - `qq-main.subagents.allowAgents = ["brain-secretary-dev", "brain-secretary-review"]`
-- `tools.agentToAgent.allow = ["qq-main", "brain-secretary-dev", "brain-secretary-review"]`
+- `auto-evolve-main.subagents.allowAgents = ["brain-secretary-dev", "brain-secretary-review"]`
+- `tools.agentToAgent.allow = ["qq-main", "auto-evolve-main", "brain-secretary-dev", "brain-secretary-review"]`
 - `tools.sessions.visibility = "all"`
 - 当前默认模型：`penguin/claude-sonnet-4-6`
 - 2026-03-10 起不再默认走 `gpt-5.1`，因为上游 distributor 连续返回 `503 No available channel for model gpt-5.1`
@@ -87,6 +89,7 @@ openclaw status
 如果你改了 `/root/.openclaw/openclaw.json`：
 
 ```bash
+python3 scripts/reconcile_auto_evolve_agent.py --json
 openclaw config validate
 systemctl --user restart openclaw-gateway.service
 ```
@@ -195,8 +198,8 @@ NapCat(instance) -> QQ Bridge(instance) -> OpenClaw(target agent)
 - Paperclip `openclaw_gateway` adapter 统一使用固定 session key，避免 `agent does not match session key agent main`
 - 当前固定 session key 规则：`agent:<openclaw_agent_id>:paperclip`
 - 本机 `Paperclip CLI / QQ` 默认直接调用 `http://127.0.0.1:3110`，依赖 `local_trusted` 板级权限
-- `openclaw-paperclip-projection.service` 会持续扫描 `qq-main` 转录，把真实子 agent 协同镜像成 Paperclip 父子 issue
-- `openclaw-project-auto-evolve.service` 会周期性用固定 session 驱动 `qq-main` 主动给注册项目做“找活 -> 技术实施 -> 验收复核 -> 自动打回 -> 提交到 agent 分支”的闭环
+- `openclaw-paperclip-projection.service` 会持续扫描 `qq-main` / `auto-evolve-main` 转录，把真实子 agent 协同镜像成 Paperclip 父子 issue
+- `openclaw-project-auto-evolve.service` 会周期性用独立 agent `auto-evolve-main` 主动给注册项目做“找活 -> 技术实施 -> 验收复核 -> 自动打回 -> 提交到 agent 分支”的闭环
 - 投影 issue 默认不分配 assignee，只做展示，不触发二次执行
 - 投影服务会过滤 Paperclip 自身 wake event，避免递归投影
 

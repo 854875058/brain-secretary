@@ -218,13 +218,15 @@ python3 scripts/project_auto_evolve_daemon.py once --project tower-eye --json
 bash scripts/project_auto_evolve_apply.sh
 ```
 
+`project_auto_evolve_apply.sh` 会先补齐 / 校正 `auto-evolve-main`，再重启 gateway 并拉起守护。
+
 它会自动：
 
 - 先自修 `main / work / agent` 的分支边界；若三者同头，会只在 `agent/<project>` 上补一笔隔离 checkpoint
 - 每轮使用 fresh session，避免被上一轮超时/卡住的上下文拖死
 - 先准备 `work/<project>` 和 `agent/<project>`
 - 确保主分支（如 `main`）被保护，不允许自动提交/推送
-- 驱动 `qq-main` 自己找活、派技术号、拉验收号、自动返工
+- 驱动 `auto-evolve-main` 做内部找活、派技术号、拉验收号、自动返工，但不占用 `qq-main` 主会话
 - 最终只把改动落到 `agent/<project>`
 
 ### 2) 让 agent 干活

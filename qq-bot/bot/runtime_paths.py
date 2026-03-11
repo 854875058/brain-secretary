@@ -13,10 +13,24 @@ BOT_LOG_PATH = LOG_DIR / 'bot.log'
 TASK_DB_PATH = DATA_DIR / 'tasks.db'
 INBOX_ROOT = DATA_DIR / 'inbox'
 TTS_OUTPUT_DIR = DATA_DIR / 'generated_tts'
-OPENCLAW_TRANSCRIPT_DIR = Path(
-    os.environ.get('QQ_BOT_OPENCLAW_TRANSCRIPT_DIR')
-    or (Path.home() / '.openclaw' / 'agents' / 'qq-main' / 'sessions')
-)
+DEFAULT_OPENCLAW_TRANSCRIPT_DIRS = [
+    Path.home() / '.openclaw' / 'agents' / 'qq-main' / 'sessions',
+    Path.home() / '.openclaw' / 'agents' / 'auto-evolve-main' / 'sessions',
+]
+
+
+def _load_openclaw_transcript_dirs() -> list[Path]:
+    multi = str(os.environ.get('QQ_BOT_OPENCLAW_TRANSCRIPT_DIRS') or '').strip()
+    if multi:
+        return [Path(item).expanduser() for item in multi.split(os.pathsep) if str(item).strip()]
+    single = str(os.environ.get('QQ_BOT_OPENCLAW_TRANSCRIPT_DIR') or '').strip()
+    if single:
+        return [Path(single).expanduser()]
+    return list(DEFAULT_OPENCLAW_TRANSCRIPT_DIRS)
+
+
+OPENCLAW_TRANSCRIPT_DIRS = _load_openclaw_transcript_dirs()
+OPENCLAW_TRANSCRIPT_DIR = OPENCLAW_TRANSCRIPT_DIRS[0]
 TEST_IMAGE_PATH = DATA_DIR / 'openclaw-test-image.png'
 TEST_FILE_PATH = DATA_DIR / 'openclaw-test-file.txt'
 TEST_VOICE_PATH = DATA_DIR / 'openclaw-test-voice.wav'

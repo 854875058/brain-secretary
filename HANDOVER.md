@@ -1,13 +1,13 @@
 # HANDOVER.md
 
 > 给后续接手的助手 / Claude / Codex 读
-> 更新: 2026-03-07
+> 更新: 2026-03-11
 
 ---
 
 ## 一句话状态
 
-当前现网 QQ 入口已经从 `NapCat -> qq-bot` 迁移到 OpenClaw 原生 `qqbot` 渠道，并保持 **方案 B：`qq-main` 协调大脑 + 多个真实子 agent**。
+当前现网 QQ 入口已经从 `NapCat -> qq-bot` 迁移到 OpenClaw 原生 `qqbot` 渠道，并保持 **方案 B：`qq-main` 协调大脑 + 多个真实子 agent**；项目自动进化现改由内部 agent `auto-evolve-main` 驱动。
 
 ---
 
@@ -27,6 +27,10 @@
   - 角色：协调大脑
   - workspace：`/root/.openclaw/workspace`
   - 当前 QQ 渠道绑定：`qqbot:default`
+- `auto-evolve-main`
+  - 角色：自动进化专用内部协调 agent
+  - workspace：`/root/.openclaw/workspace`
+  - 当前用途：给 `openclaw-project-auto-evolve.service` 执行内部巡检 / 改造 / 验收闭环
 - `brain-secretary-dev`
   - 角色：主项目工程子 agent
   - workspace：`/root/brain-secretary`
@@ -41,7 +45,9 @@
 - `channels.qqbot.enabled=true`
 - `plugins.allow=["qqbot"]`
 - `qq-main.subagents.allowAgents`
+- `auto-evolve-main.subagents.allowAgents`
 - `tools.agentToAgent.enabled=true`
+- `tools.agentToAgent.allow` 包含 `qq-main`、`auto-evolve-main`、`brain-secretary-dev`、`brain-secretary-review`
 - `tools.sessions.visibility=all`
 - 当前默认模型为 `penguin/claude-sonnet-4-6`
 - 2026-03-10 起不再默认走 `gpt-5.1`，因为上游 distributor 多次返回 `503 No available channel for model gpt-5.1`
@@ -289,8 +295,9 @@ python3 scripts/napcat_multi.py qr --json
 - 当前稳定映射：用户说“铁塔 / 铁塔项目 / 铁塔多模态检索”时，默认指 `https://github.com/854875058/Tower-Eye`。
 - `Tower-Eye` 现已落盘到 `/root/projects/Tower-Eye`，双轨分支固定为 `work/tower-eye` + `agent/tower-eye`，并对 `main` 安装了提交/推送保护。
 - 对缺依赖、缺测试工具、仓库未克隆这类可恢复阻塞，默认由内部技术链路自己补齐；验收发现问题后，大脑应自动打回技术号继续修。
-- 夜间自动进化由 `openclaw-project-auto-evolve.service` 常驻驱动，默认只在 `agent/tower-eye` 上找活、改动、验收、提交。
+- 夜间自动进化由 `openclaw-project-auto-evolve.service` 常驻驱动，并固定通过 `auto-evolve-main` 协调内部子 agent；默认只在 `agent/tower-eye` 上找活、改动、验收、提交。
 - 自动进化每轮默认 fresh session；开跑前先执行一次分支边界自修，避免 `main / work / agent` 再次串到同一个头上。
+- 修复 / 恢复类任务默认先动手并自验证，再对外汇报，避免把未验证结果当成完成事实。
 
 
 ## Paperclip 当前状态
@@ -303,6 +310,6 @@ python3 scripts/napcat_multi.py qr --json
 - 本机 `QQ / CLI -> Paperclip` 默认走 `local_trusted`，不再依赖本地 agent key
 - 当前 Paperclip 控制面 agent：`qq-main`、`brain-secretary-dev`、`brain-secretary-review`
 - 当前 OpenClaw gateway session key 固定为：`agent:<openclaw_agent_id>:paperclip`
-- `qq-main` 的子 agent 协同会自动投影成 Paperclip 父子 issue，方便网页端观战
+- `qq-main` / `auto-evolve-main` 的子 agent 协同会自动投影成 Paperclip 父子 issue，方便网页端观战
 - 投影 issue 默认不分配 assignee，只用于展示，不会在 Paperclip 里再次派活
 - 投影服务会忽略 Paperclip 自身 wake event，避免递归回灌

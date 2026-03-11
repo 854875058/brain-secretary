@@ -28,6 +28,7 @@ DEFAULT_SYNC_CONFIG_PATH = ROOT / 'ops' / 'project-sync.json'
 STATE_KEY = 'project_auto_evolve_v1'
 DEFAULT_AGENT_TIMEOUT_SECONDS = 3600
 DEFAULT_SESSION_MODE = 'fresh'
+DEFAULT_AUTO_EVOLVE_AGENT_ID = 'auto-evolve-main'
 
 
 class AutoEvolveError(RuntimeError):
@@ -100,6 +101,7 @@ def _load_auto_config(path: Path) -> list[dict[str, Any]]:
                 'enabled': bool(item.get('enabled', True)),
                 'registry_project': str(item.get('registry_project') or name).strip() or name,
                 'sync_project': str(item.get('sync_project') or name).strip() or name,
+                'agent_id': str(item.get('agent_id') or DEFAULT_AUTO_EVOLVE_AGENT_ID).strip() or DEFAULT_AUTO_EVOLVE_AGENT_ID,
                 'session_id': str(item.get('session_id') or f'auto-evolve:{name}').strip(),
                 'session_mode': _normalize_session_mode(item.get('session_mode')),
                 'interval_minutes': max(5, int(item.get('interval_minutes') or 45)),
@@ -283,6 +285,7 @@ async def run_project_cycle(project_cfg: dict[str, Any], *, sync_config: Path, d
     result: dict[str, Any] = {
         'project': project_cfg['name'],
         'repo_path': str(repo_path),
+        'agent_id': project_cfg['agent_id'],
         'session_id': effective_session_id,
         'session_id_base': project_cfg['session_id'],
         'session_mode': project_cfg.get('session_mode') or DEFAULT_SESSION_MODE,
@@ -297,7 +300,7 @@ async def run_project_cycle(project_cfg: dict[str, Any], *, sync_config: Path, d
         return result
 
     client = OpenClawClient(
-        agent_id='qq-main',
+        agent_id=project_cfg['agent_id'],
         thinking=project_cfg.get('thinking') or 'low',
         timeout_seconds=int(project_cfg.get('timeout_seconds') or DEFAULT_AGENT_TIMEOUT_SECONDS),
     )
@@ -384,7 +387,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--sync-config', default=str(DEFAULT_SYNC_CONFIG_PATH), help='项目双轨配置路径')
     parser.add_argument('--project', action='append', help='只运行指定项目')
     parser.add_argument('--poll-seconds', type=int, default=120, help='watch 模式轮询间隔')
-    parser.add_argument('--dry-run', action='store_true', help='只预演，不真正调用 qq-main')
+    parser.add_argument('--dry-run', action='store_true', help='只预演，不真正调用自动进化 agent')
     parser.add_argument('--json', action='store_true', help='JSON 输出')
     return parser
 
