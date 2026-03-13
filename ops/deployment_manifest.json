@@ -159,6 +159,7 @@
         "python3 scripts/project_auto_evolve_daemon.py status --json",
         "python3 scripts/project_auto_evolve_daemon.py doctor --json",
         "python3 scripts/project_auto_evolve_daemon.py watchdog --json",
+        "python3 scripts/project_auto_evolve_daemon.py exceptions --json",
         "python3 scripts/project_auto_evolve_daemon.py once --project tower-eye --json",
         "bash scripts/project_auto_evolve_apply.sh",
         "python3 scripts/ops_manager.py logs project_auto_evolve -n 80"
@@ -470,7 +471,7 @@
     },
     "project_auto_evolve": {
       "label": "Project Auto Evolution Daemon",
-      "description": "Continuously drives auto-evolve-main to evolve registered projects on agent branches only, with qq-main session-pollution watchdog and circuit breaker"
+      "description": "Continuously drives auto-evolve-main to evolve registered projects on agent branches only, with qq-main session-pollution watchdog, structured-report contract, review evidence gate, and exceptions-only summary"
     }
   }
 }

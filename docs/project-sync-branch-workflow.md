@@ -216,13 +216,15 @@ python3 scripts/project_sync.py prepare-agent --config ops/project-sync.json --p
 ```bash
 python3 scripts/project_auto_evolve_daemon.py doctor --json
 python3 scripts/project_auto_evolve_daemon.py watchdog --json
+python3 scripts/project_auto_evolve_daemon.py exceptions --json
 python3 scripts/project_auto_evolve_daemon.py once --project tower-eye --json
 python3 scripts/project_auto_evolve_daemon.py once --project tower-eye --dry-run --json
 bash scripts/project_auto_evolve_apply.sh
 ```
 
 `project_auto_evolve_apply.sh` 会先补齐 / 校正 `auto-evolve-main`，再重启 gateway 并拉起守护。
-`doctor` 会把守护服务状态、`watchdog` 与零副作用 `dry-run` 预演合并成一次自检。
+`doctor` 会把守护服务状态、`watchdog`、异常摘要与零副作用 `dry-run` 预演合并成一次自检。
+`exceptions` 是默认给人看的入口，只列出真正需要人工关注的项目。
 `once --dry-run` 现在是零副作用预演：不会克隆仓库、不会安装分支守护、不会执行分支同步。
 守护常驻时会先跑会话污染看门狗；一旦发现 `qq-main` 主会话又被自动进化前缀占用，会直接熔断跳过本轮。
 

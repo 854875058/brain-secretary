@@ -61,6 +61,7 @@ python3 scripts/ops_manager.py logs paperclip_projection -n 80
 python3 scripts/ops_manager.py logs project_auto_evolve -n 80
 python3 scripts/project_auto_evolve_daemon.py doctor --json
 python3 scripts/project_auto_evolve_daemon.py watchdog --json
+python3 scripts/project_auto_evolve_daemon.py exceptions --json
 systemctl status paperclip.service
 openclaw channels list
 openclaw agents bindings --json
@@ -267,10 +268,12 @@ openclaw agent --agent qq-main --message '只回复一个字：到' --thinking l
 ```bash
 python3 scripts/project_auto_evolve_daemon.py doctor --json
 python3 scripts/project_auto_evolve_daemon.py watchdog --json
+python3 scripts/project_auto_evolve_daemon.py exceptions --json
 python3 scripts/project_auto_evolve_daemon.py once --project tower-eye --dry-run --json
 ```
 
-`doctor` 会优先检查 `project_auto_evolve` 服务状态，再检查 `qq-main` 会话污染看门狗，最后附带零副作用 `dry-run` 预演结果。
+`doctor` 会优先检查 `project_auto_evolve` 服务状态，再检查 `qq-main` 会话污染看门狗，并附带异常摘要与零副作用 `dry-run` 预演结果。
+`exceptions` 适合做“人只看异常”的统一入口，只返回真正需要人工处理的项目或熔断状态。
 
 如果怀疑是 OpenAI-compatible 备用链路问题，再检查模型代理兼容修复：
 

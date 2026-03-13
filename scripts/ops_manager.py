@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import shlex
+import shutil
 import socket
 import subprocess
 import sys
@@ -200,9 +201,33 @@ class OpsManager:
             return [str(candidate)]
         for cmd in (["py", "-3"], ["python"], ["python3"]):
             executable = cmd[0]
-            if shutil_which(executable):
+            if shutil.which(executable):
                 return cmd
         return [sys.executable]
+
+    def _windows_openclaw_cmd(self) -> list[str]:
+        executable = shutil.which("openclaw.cmd") or shutil.which("openclaw")
+        if executable:
+            return [executable]
+        powershell = shutil.which("powershell.exe") or shutil.which("powershell")
+        script = shutil.which("openclaw.ps1")
+        if powershell and script:
+            return [powershell, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script]
+        raise OpsError("Windows 未找到 openclaw 可执行入口，请确认 openclaw 已加入 PATH")
+
+    def _windows_gateway_cmd(self) -> list[str]:
+        base_cmd = self._windows_openclaw_cmd()
+        command = list(base_cmd) + ["gateway"]
+        openclaw_entry = Path(base_cmd[0])
+        node_executable = shutil.which("node")
+        if node_executable and openclaw_entry.name.lower() in {"openclaw.cmd", "openclaw.ps1"}:
+            openclaw_main = openclaw_entry.parent / "node_modules" / "openclaw" / "openclaw.mjs"
+            if openclaw_main.exists():
+                command = [node_executable, str(openclaw_main), "gateway"]
+        ports = self._component_meta("gateway").get("ports") or []
+        if ports:
+            command.extend(["--port", str(int(ports[0]["port"]))])
+        return command
 
     def _windows_napcat_paths(self) -> tuple[str, str, str]:
         meta = self._component_meta("napcat")
@@ -213,7 +238,7 @@ class OpsManager:
 
     def _windows_start(self, component: str) -> None:
         if component == "gateway":
-            self._spawn_detached(["openclaw", "gateway"], cwd=self.root)
+            self._spawn_detached(self._windows_gateway_cmd(), cwd=self.root)
             return
         if component == "bridge":
             python_cmd = self._windows_python_cmd()
@@ -356,16 +381,6 @@ class OpsManager:
                 self._run(["powershell", "-NoProfile", "-Command", f"Get-Content -Path '{resolved}' -Tail {lines}"], capture=False)
             return
         raise OpsError(f"Windows 组件 {component} 暂未配置日志来源")
-
-
-def shutil_which(executable: str) -> str | None:
-    for directory in os.environ.get("PATH", "").split(os.pathsep):
-        candidate = Path(directory) / executable
-        if candidate.exists():
-            return str(candidate)
-    return None
-
-
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Brain Secretary 运维脚本")
     parser.add_argument("command", choices=["info", "status", "start", "stop", "restart", "ports", "logs"], help="运维动作")
