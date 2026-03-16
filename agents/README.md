@@ -1,56 +1,76 @@
 # 子 Agent 模块
 
-> 说明：2026-03-07 起，现网已经落地 `qq-main` 协调大脑 + `brain-secretary-dev` 真实子 agent。具体以 `README.md`、`docs/openclaw-setup.md`、`HANDOVER.md` 为准。
-
-
-> 目录: agents/
-> 状态: 规划中
+> 目录：`agents/`
+> 更新：2026-03-16
+> 状态：角色说明目录，不代表当前仓库里存在一套独立 agent 服务源码
 
 ---
 
-## 现有项目 → Agent 映射
+## 当前已落地的子 agent
 
-| Agent 名称 | 负责任务 | 对应现有目录 | 状态 |
-|-----------|---------|------------|------|
-| dataset-agent | PDF/Word/PPT 转换 | PDF-Excel, PDF-PPT, PDF转md, Word-Excel 等 | 待封装 |
-| crawler-agent | 数据爬取、Token统计 | 现有爬虫脚本 | 待封装 |
-| doc-agent | 文档读写处理 | 读取doc文件, Word、PDF、PPT-TXT | 待封装 |
-| ragflow-agent | RAG 知识库操作 | ragflow/ | 待封装 |
+当前真实参与协作的子 agent 只有两类：
 
----
+| agent id | 角色 | workspace | 当前职责 |
+|---|---|---|---|
+| `brain-secretary-dev` | 工程实施子 agent | `/root/brain-secretary` | 代码修改、联调排障、部署配置、文档维护 |
+| `brain-secretary-review` | 方案 / 验收子 agent | `/root/brain-secretary` | 第二意见、风险提醒、验收复核 |
 
-## Agent 接口规范
-
-每个 Agent 需要实现以下接口：
-
-### 接收任务
-
-```
-POST /task
-{
-  "task_id": "uuid",
-  "type": "任务类型",
-  "params": {},
-  "callback_url": "大脑回调地址"
-}
-```
-
-### 汇报结果
-
-```
-POST <callback_url>
-{
-  "task_id": "uuid",
-  "status": "success" | "failed",
-  "result": {},
-  "error": "错误信息（如果失败）"
-}
-```
+它们都由 OpenClaw 调度，不是这个目录下的独立二进制或单独服务。
 
 ---
 
-## 待开发
+## 当前协作方式
 
-- [ ] 为每个现有项目封装统一接口
-- [ ] 编写各 Agent 的启动脚本
-- [ ] 定义每类任务的输入/输出规范
+主协作链路是：
+
+```text
+qq-main -> brain-secretary-dev / brain-secretary-review -> qq-main
+```
+
+自动进化链路是：
+
+```text
+auto-evolve-main -> brain-secretary-dev / brain-secretary-review
+```
+
+协作约束：
+
+- `qq-main` 负责总协调，不直接退化为子 agent
+- `brain-secretary-dev` 负责实施和验证
+- `brain-secretary-review` 负责复核和第二意见
+- 只要发生子 agent 协作，过程就会被投影到 Paperclip
+
+---
+
+## 本目录和早期规划的关系
+
+仓库早期设想过把不同任务封装成更细粒度 agent，例如：
+
+- dataset-agent
+- crawler-agent
+- doc-agent
+- ragflow-agent
+
+这些设想目前仍可作为未来扩展方向，但不是当前现网 agent 拓扑。
+
+当前判断 agent 结构时，优先以：
+
+1. `CLAUDE.md`
+2. `HANDOVER.md`
+3. `docs/openclaw-setup.md`
+4. `ops/deployment_manifest.json`
+
+为准。
+
+---
+
+## 未来可能扩展
+
+如果后续需要把项目能力继续拆细，可以在这里沉淀：
+
+- 角色定义
+- 输入输出规范
+- 提示词模板
+- 委派和验收约定
+
+但在真正落地之前，不要把这些规划内容误认为当前线上 agent 结构。

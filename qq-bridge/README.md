@@ -1,36 +1,79 @@
 # QQ 接入层
 
-> 目录: qq-bridge/
-> 状态: 已有可用实现（qq-bot 目录）
+> 目录：`qq-bridge/`
+> 更新：2026-03-16
+> 状态：历史演进说明目录
 
 ---
 
-## 技术栈
+## 当前结论
 
-- **NapCat** - QQ 协议桥接，将 QQ 消息转为 OneBot 11 标准事件
-- **路径**: D:\NapCat\
-- **协议版本**: OneBot 11
+当前现网主 QQ 入口已经不是本目录描述的旧桥接链路，而是 OpenClaw 原生 `qqbot` 渠道：
 
----
+```text
+QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents
+```
 
-## 当前状态
+因此，本目录更适合被理解为：
 
-父目录中已有 `qq-bot/` 项目，已实现“QQ Bridge → OpenClaw”链路：
-- 接收 NapCat OneBot11 事件（`/qq/message`）
-- 生成稳定 `session-id`，调用 `openclaw agent --session-id ... --json`
-- 把回复通过 NapCat API 发回 QQ
-- 支持私聊对话、群聊 @bot、基础管理指令
+- 早期 QQ 接入方案说明
+- 历史桥接层背景资料
+- 辅助多 QQ 入口的概念入口
 
 ---
 
-## 待完成
+## 当前仍然相关的桥接能力
 
-- [ ] 统一“QQ 接入层”与“Brain/Agents”目录结构（逐步替换旧版实现）
-- [ ] 在 OpenClaw 中创建隔离 agent（workspace 指向测试文件夹/本仓库）
-- [ ] 扩展白名单/权限控制（目前默认仅管理员可用）
+虽然现网主入口已切换，但桥接层没有完全失去价值。当前仍然用于：
+
+- 多 QQ 号扫码联调
+- Windows 本地 `QQ + NapCat`，服务器侧 `QQ Bridge + OpenClaw`
+- 指定 agent 的辅助扫码入口
+
+默认辅助映射：
+
+- `brain` -> `qq-main`
+- `tech` -> `brain-secretary-dev`
+- `review` -> `brain-secretary-review`
+
+相关脚本：
+
+- `scripts/napcat_multi.py`
+- `scripts/qq_bot_multi.py`
+- `scripts/windows_local_qq_multi.ps1`
+- `scripts/windows_local_qq_remote_apply.ps1`
 
 ---
 
-## 常见问题
+## 现网与历史链路的区别
 
-见 [../docs/napcat-setup.md](../docs/napcat-setup.md)
+当前现网主链路：
+
+- OpenClaw 原生 `qqbot`
+- 主入口固定绑定 `qq-main`
+- 子 agent 协作走 OpenClaw 内部委派
+
+历史 / 辅助链路：
+
+- `NapCat -> qq-bot(FastAPI Bridge) -> OpenClaw`
+- 用于兼容、联调或 Windows 本地辅助入口
+
+如果两边说法冲突，以现网主链路为准。
+
+---
+
+## 建议阅读顺序
+
+如果你要了解当前真实接入方式，优先看：
+
+1. `README.md`
+2. `HANDOVER.md`
+3. `docs/openclaw-setup.md`
+4. `docs/systemd-ops.md`
+5. `ops/deployment_manifest.json`
+
+如果你要了解辅助桥接和多 QQ 联调，再看：
+
+- `qq-bot/README.md`
+- `docs/windows-local-qq-multi.md`
+- `docs/napcat-setup.md`

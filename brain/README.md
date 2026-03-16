@@ -1,28 +1,80 @@
 # 大脑核心模块
 
-> 说明：2026-03-07 起，现网已经落地 `qq-main` 协调大脑 + `brain-secretary-dev` 真实子 agent。具体以 `README.md`、`docs/openclaw-setup.md`、`HANDOVER.md` 为准。
-
-
-> 目录: brain/
-> 状态: 规划中
+> 目录：`brain/`
+> 更新：2026-03-16
+> 状态：概念说明目录，不是当前现网主运行时代码目录
 
 ---
 
-## 职责
+## 当前定位
 
-大脑是整个系统的**总调度中心**，运行在 OpenClaw 中，用 Claude 模型驱动。
+当前系统里的“大脑”已经不是本目录下的一个独立程序，而是运行在 OpenClaw 里的协调 agent：
 
-## 核心能力
+- agent id：`qq-main`
+- workspace：`/root/.openclaw/workspace`
+- 主入口绑定：`qqbot:default -> qq-main`
 
-1. **指令理解** - 用自然语言与你交流，理解你的意图
-2. **任务分发** - 识别任务类型，路由到对应的子 Agent
-3. **进度跟踪** - 记录每个任务的状态
-4. **验收测试** - 对子 Agent 返回的结果做质量检验
-5. **结果汇报** - 通过 QQ 把结果告诉你
+如果需要了解当前真实运行方式，优先看：
 
-## 待开发
+1. `CLAUDE.md`
+2. `HANDOVER.md`
+3. `docs/openclaw-setup.md`
+4. `docs/systemd-ops.md`
+5. `ops/deployment_manifest.json`
 
-- [ ] 大脑 Prompt 设计（角色设定、任务路由规则）
-- [ ] 任务状态存储（本地 JSON / SQLite）
-- [ ] 验收测试逻辑（每类任务定义合格标准）
-- [ ] 与子 Agent 的通信接口
+---
+
+## 当前大脑职责
+
+`qq-main` 负责：
+
+- 理解用户意图
+- 判断是直接回答，还是委派子 agent
+- 把工程实施任务派给 `brain-secretary-dev`
+- 把方案补充和验收复核任务派给 `brain-secretary-review`
+- 汇总执行结果并统一回复给用户
+
+在自动进化场景下，协调职责由 `auto-evolve-main` 承担，但它不接 QQ 主入口流量。
+
+---
+
+## 当前边界
+
+大脑负责：
+
+- 意图理解
+- 任务拆解
+- 任务路由
+- 结果汇总
+- 验收闭环
+
+大脑不直接负责：
+
+- 现网工程实现细节
+- 部署脚本的具体修改
+- 项目仓库里的具体代码修复
+- Paperclip 控制面的内部实现
+
+这些工作默认由子 agent 或外围脚本完成。
+
+---
+
+## 本目录的作用
+
+`brain/` 目前保留为概念和说明目录，主要用于：
+
+- 补充大脑职责说明
+- 存放后续可能抽象出来的提示词、路由约定或设计文档
+- 给接手者一个“这个仓库里的 brain 指什么”的说明入口
+
+它不是当前运行时真源。
+
+---
+
+## 相关真源
+
+- 总体说明：`README.md`
+- 架构说明：`ARCHITECTURE.md`
+- 当前 OpenClaw 配置：`docs/openclaw-setup.md`
+- 当前运维方式：`docs/systemd-ops.md`
+- 当前交接状态：`HANDOVER.md`

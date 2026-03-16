@@ -1,104 +1,110 @@
-# QQ Bridge（OpenClaw）
+# QQ Bridge（历史兼容 / 辅助多入口）
 
-基于 NapCat + FastAPI + **OpenClaw** 的 QQ Bridge：
+> 目录：`qq-bot/`
+> 更新：2026-03-16
+> 状态：现网主入口已迁移；本目录保留为历史兼容实现和辅助桥接层
 
-- NapCat 负责把 QQ 消息推送出来（OneBot 11）
-- 本服务负责把消息转发给 `openclaw agent --session-id ...`（具备会话/记忆）
-- 再把回复通过 NapCat API 发回 QQ
+---
 
-## 功能
+## 当前定位
 
-1. **AI 对话**
-   - 私聊直接对话
-   - 群聊 @bot 触发对话
-   - 默认走 OpenClaw（推荐），具备 session 级记忆
+本目录里的 FastAPI QQ Bridge 不是当前现网主入口。
 
-2. **远程指令执行**
-   - `/status` - 查看服务器 CPU 状态
-   - `/disk` - 查看磁盘使用情况
-   - `/crawl` - 启动爬虫脚本
-   - `/logs` - 查看最近日志
-   - `/help` - 显示帮助信息
+当前现网主链路是：
 
-3. **闭环增强**
-   - `/remember` / `/evolve` 会落到桥接层长期记忆
-   - 自动把已固化记忆注入后续 prompt
-   - `watchdog` 定时检查 OpenClaw / 端口 / NapCat
+```text
+QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents
+```
 
-4. **Paperclip 兼容桥接**
-   - `/pc-status` / `/pc-agents` / `/pc-issues`
-   - `/pc-new` 创建 issue
-   - `/pc-run` 创建并立即唤醒对应 Paperclip agent
+`qq-bot/` 当前主要承担三类用途：
 
-5. **定时推送**
-   - 每天 9:00 推送爬虫统计
+- 历史实现参考
+- 辅助多 QQ 桥接入口
+- Windows 本地 QQ / NapCat 方案的服务器侧桥接能力
 
-## 部署步骤
+---
 
-### 1. 安装依赖
+## 当前仍可提供的能力
+
+作为辅助桥接层，`qq-bot/` 仍然保留以下能力：
+
+- NapCat OneBot 11 事件接收
+- 为桥接会话生成稳定的 OpenClaw `session-id`
+- 调用 OpenClaw 并把回复回发到 QQ
+- 基础管理命令
+- 记忆沉淀与 watchdog
+- Paperclip 兼容桥接命令
+
+如果你需要现网主入口，请不要直接从这里理解系统主架构。
+
+---
+
+## 当前推荐使用方式
+
+### 现网主入口
+
+优先使用 OpenClaw 原生 `qqbot` 渠道，相关文档见：
+
+- `docs/openclaw-setup.md`
+- `docs/systemd-ops.md`
+- `HANDOVER.md`
+
+### 辅助多 QQ 入口
+
+优先通过仓库脚本管理，而不是手工把 `qq-bot/main.py` 当主服务长期运行：
 
 ```bash
-cd qq-bot
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
+python3 scripts/qq_bot_multi.py bootstrap --json
+python3 scripts/qq_bot_multi.py status --json
+python3 scripts/napcat_multi.py qr --json
 ```
 
-### 2. 配置 NapCat
+### Windows 本地 QQ / NapCat
 
-1. 下载 NapCat Windows 版本
-2. 解压并运行 `napcat.exe`
-3. 扫码登录 QQ
-4. 编辑 `config/onebot11.json`：
+优先看：
 
-```json
-{
-  "http": {
-    "enable": true,
-    "host": "0.0.0.0",
-    "port": 3000,
-    "post": [
-      {
-        "url": "http://127.0.0.1:8000/qq/message",
-        "secret": ""
-      }
-    ]
-  }
-}
-```
+- `docs/windows-local-qq-multi.md`
+- `scripts/windows_local_qq_quick_setup.bat`
+- `scripts/windows_local_qq_multi.ps1`
+- `scripts/windows_local_qq_remote_apply.ps1`
 
-### 3. 修改配置
+---
 
-编辑 `config.yaml`，将 `admin.qq_number` 改为你的 QQ 号
+## 配置边界
 
-### 4. 启动服务
+- `qq-bot/config.yaml` 更适合作为单实例基线配置和辅助桥接参考
+- 仓库默认不应把 `qq-bot/config.yaml` 的 `openclaw.agent_id` 改离 `qq-main`，除非明确重构入口架构
+- 多实例桥接的实际 agent 映射应优先由 `scripts/qq_bot_multi.py` 生成和维护
+- `qq-bot/logs/`、运行态数据库、密钥与 token 不应提交到远端
 
-```bash
-python main.py
-```
+---
 
-## 测试
+## 何时使用本目录
 
-- 私聊 bot："你好"
-- 群聊 @bot："介绍一下你自己"
-- 发送指令："/help"
-- 查看记忆：`/memories`
-- 搜索记忆：`/memory-search 关键词`
-- 查看 watchdog：`/watchdog`
-- 查看 Paperclip 状态：`/pc-status`
-- 创建并唤醒 Paperclip 任务：`/pc-run brain-secretary-dev|检查测试失败|先跑测试再给建议`
+适合使用 `qq-bot/` 的场景：
+
+- 调试或复盘历史桥接逻辑
+- 搭建辅助扫码入口
+- 配合 Windows 本地 NapCat 做联调
+- 检查桥接层命令、记忆和 Paperclip 兼容行为
+
+不适合使用本目录的场景：
+
+- 判断现网主入口架构
+- 判断当前正式部署方式
+- 直接作为“唯一生产入口”理解整个系统
+
+---
 
 ## 目录结构
 
-```
+```text
 qq-bot/
-├── main.py                 # 主程序
-├── config.yaml             # 配置文件
-├── requirements.txt        # 依赖
+├── main.py
+├── config.yaml
+├── requirements.txt
 ├── bot/
-│   ├── ai_client.py        # AI 对话
-│   ├── qq_sender.py        # QQ 消息发送
-│   ├── command_handler.py  # 指令执行
-│   └── scheduler.py        # 定时任务
-└── logs/                   # 日志目录
+└── data/
 ```
+
+如果需要了解本目录的具体能力实现，直接从 `bot/` 下的模块开始看；如果需要判断“现在系统到底怎么跑”，优先回到主仓文档真源。
