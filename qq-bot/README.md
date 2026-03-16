@@ -45,6 +45,7 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents
 
 优先使用 OpenClaw 原生 `qqbot` 渠道，相关文档见：
 
+- `docs/README.md`
 - `docs/openclaw-setup.md`
 - `docs/systemd-ops.md`
 - `HANDOVER.md`
@@ -108,3 +109,5 @@ qq-bot/
 ```
 
 如果需要了解本目录的具体能力实现，直接从 `bot/` 下的模块开始看；如果需要判断“现在系统到底怎么跑”，优先回到主仓文档真源。
+
+桥接层的历史背景说明见：`docs/legacy/qq-bridge.md`。

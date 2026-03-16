@@ -136,11 +136,11 @@ NapCat(instance)
 
 ## 七、历史兼容说明
 
-仓库内仍保留一些历史或规划目录：
+仓库内仍保留一些历史或概念文档：
 
 - `qq-bot/`：旧桥接实现，现作为历史参考和辅助多 QQ 桥接层
-- `qq-bridge/`：早期接入层说明
-- `brain/`、`agents/`：早期规划目录，不代表当前运行时实现边界
+- `docs/legacy/qq-bridge.md`：早期接入层说明
+- `docs/concepts/brain.md`、`docs/concepts/agents.md`：概念说明文档，不代表当前运行时源码边界
 
 如果这些文档与现网说明冲突，优先级按以下顺序判断：
 

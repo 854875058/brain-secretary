@@ -32,6 +32,7 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents(按需) -> qq-main -> 
 | agent id | 角色 | workspace |
 |---|---|---|
 | `qq-main` | 协调大脑 | `/root/.openclaw/workspace` |
+| `auto-evolve-main` | 自动进化专用内部协调 agent | `/root/.openclaw/workspace` |
 | `brain-secretary-dev` | 主项目工程子 agent | `/root/brain-secretary` |
 | `brain-secretary-review` | 方案 / 验收子 agent | `/root/brain-secretary` |
 
@@ -62,13 +63,18 @@ brain-secretary/
 ├── HANDOVER.md
 ├── AGENTS.md
 ├── OPERATING_PROFILE.md
-├── brain/
-├── agents/
 ├── qq-bot/
-├── qq-bridge/
+├── docs/
+│   ├── README.md
+│   ├── concepts/
+│   ├── legacy/
+│   ├── archive/
+│   └── presentations/
+├── memory/
 ├── ops/
 ├── scripts/
-└── docs/
+├── tests/
+└── archives/
 ```
 
 ---
@@ -89,8 +95,10 @@ brain-secretary/
 ## 快速导航
 
 - 想了解整体部署 → `SETUP.md`
+- 想按类别找文档 → `docs/README.md`
 - 想看当前运维方式 → `docs/systemd-ops.md`
 - 想看 OpenClaw 多 Agent 配置 → `docs/openclaw-setup.md`
+- 想看概念层说明 → `docs/concepts/brain.md`、`docs/concepts/agents.md`
 - 想看 Windows 本地三开 QQ 对接 → `docs/windows-local-qq-multi.md`
 - 想看 Windows / 服务器项目双轨分支协作 → `docs/project-sync-branch-workflow.md`
 - 想开项目 24 小时自动进化 → `ops/auto-evolve.json`、`scripts/project_auto_evolve_daemon.py`、`scripts/project_auto_evolve_apply.sh`
@@ -104,6 +112,7 @@ brain-secretary/
 - 想看自动化维护规则 → `CLAUDE.md`
 - 想看工作画像 / 用户偏好 / 常用工具 → `OPERATING_PROFILE.md`
 - 想配置 GitHub 仓库与自动提交 → `docs/github-workflow.md`
+- 历史 QQ Bridge 背景 → `docs/legacy/qq-bridge.md`
 - 历史阶段性专题文档 → `docs/archive/`
 - 想统一启停/状态/日志 → `scripts/ops_manager.py`
 - 想看部署真源 → `ops/deployment_manifest.json`

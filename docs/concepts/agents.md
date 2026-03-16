@@ -1,8 +1,8 @@
 # 子 Agent 模块
 
-> 目录：`agents/`
+> 原位置：`agents/README.md`
 > 更新：2026-03-16
-> 状态：角色说明目录，不代表当前仓库里存在一套独立 agent 服务源码
+> 状态：角色说明文档，不代表当前仓库里存在一套独立 agent 服务源码
 
 ---
 
@@ -42,7 +42,7 @@ auto-evolve-main -> brain-secretary-dev / brain-secretary-review
 
 ---
 
-## 本目录和早期规划的关系
+## 本文档和早期规划的关系
 
 仓库早期设想过把不同任务封装成更细粒度 agent，例如：
 
@@ -55,22 +55,9 @@ auto-evolve-main -> brain-secretary-dev / brain-secretary-review
 
 当前判断 agent 结构时，优先以：
 
-1. `CLAUDE.md`
-2. `HANDOVER.md`
-3. `docs/openclaw-setup.md`
-4. `ops/deployment_manifest.json`
+1. `../../CLAUDE.md`
+2. `../../HANDOVER.md`
+3. `../openclaw-setup.md`
+4. `../../ops/deployment_manifest.json`
 
 为准。
-
----
-
-## 未来可能扩展
-
-如果后续需要把项目能力继续拆细，可以在这里沉淀：
-
-- 角色定义
-- 输入输出规范
-- 提示词模板
-- 委派和验收约定
-
-但在真正落地之前，不要把这些规划内容误认为当前线上 agent 结构。

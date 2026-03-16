@@ -1,14 +1,14 @@
 # 大脑核心模块
 
-> 目录：`brain/`
+> 原位置：`brain/README.md`
 > 更新：2026-03-16
-> 状态：概念说明目录，不是当前现网主运行时代码目录
+> 状态：概念说明文档，不是当前现网主运行时代码目录
 
 ---
 
 ## 当前定位
 
-当前系统里的“大脑”已经不是本目录下的一个独立程序，而是运行在 OpenClaw 里的协调 agent：
+当前系统里的“大脑”已经不是仓库里的独立程序，而是运行在 OpenClaw 里的协调 agent：
 
 - agent id：`qq-main`
 - workspace：`/root/.openclaw/workspace`
@@ -16,11 +16,11 @@
 
 如果需要了解当前真实运行方式，优先看：
 
-1. `CLAUDE.md`
-2. `HANDOVER.md`
-3. `docs/openclaw-setup.md`
-4. `docs/systemd-ops.md`
-5. `ops/deployment_manifest.json`
+1. `../../CLAUDE.md`
+2. `../../HANDOVER.md`
+3. `../openclaw-setup.md`
+4. `../systemd-ops.md`
+5. `../../ops/deployment_manifest.json`
 
 ---
 
@@ -59,22 +59,10 @@
 
 ---
 
-## 本目录的作用
-
-`brain/` 目前保留为概念和说明目录，主要用于：
-
-- 补充大脑职责说明
-- 存放后续可能抽象出来的提示词、路由约定或设计文档
-- 给接手者一个“这个仓库里的 brain 指什么”的说明入口
-
-它不是当前运行时真源。
-
----
-
 ## 相关真源
 
-- 总体说明：`README.md`
-- 架构说明：`ARCHITECTURE.md`
-- 当前 OpenClaw 配置：`docs/openclaw-setup.md`
-- 当前运维方式：`docs/systemd-ops.md`
-- 当前交接状态：`HANDOVER.md`
+- `../../README.md`
+- `../../ARCHITECTURE.md`
+- `../openclaw-setup.md`
+- `../systemd-ops.md`
+- `../../HANDOVER.md`

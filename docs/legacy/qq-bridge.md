@@ -1,20 +1,20 @@
 # QQ 接入层
 
-> 目录：`qq-bridge/`
+> 原位置：`qq-bridge/README.md`
 > 更新：2026-03-16
-> 状态：历史演进说明目录
+> 状态：历史演进说明文档
 
 ---
 
 ## 当前结论
 
-当前现网主 QQ 入口已经不是本目录描述的旧桥接链路，而是 OpenClaw 原生 `qqbot` 渠道：
+当前现网主 QQ 入口已经不是旧桥接链路，而是 OpenClaw 原生 `qqbot` 渠道：
 
 ```text
 QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents
 ```
 
-因此，本目录更适合被理解为：
+因此，这份文档更适合被理解为：
 
 - 早期 QQ 接入方案说明
 - 历史桥接层背景资料
@@ -38,10 +38,10 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents
 
 相关脚本：
 
-- `scripts/napcat_multi.py`
-- `scripts/qq_bot_multi.py`
-- `scripts/windows_local_qq_multi.ps1`
-- `scripts/windows_local_qq_remote_apply.ps1`
+- `../../scripts/napcat_multi.py`
+- `../../scripts/qq_bot_multi.py`
+- `../../scripts/windows_local_qq_multi.ps1`
+- `../../scripts/windows_local_qq_remote_apply.ps1`
 
 ---
 
@@ -59,21 +59,3 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents
 - 用于兼容、联调或 Windows 本地辅助入口
 
 如果两边说法冲突，以现网主链路为准。
-
----
-
-## 建议阅读顺序
-
-如果你要了解当前真实接入方式，优先看：
-
-1. `README.md`
-2. `HANDOVER.md`
-3. `docs/openclaw-setup.md`
-4. `docs/systemd-ops.md`
-5. `ops/deployment_manifest.json`
-
-如果你要了解辅助桥接和多 QQ 联调，再看：
-
-- `qq-bot/README.md`
-- `docs/windows-local-qq-multi.md`
-- `docs/napcat-setup.md`

@@ -77,4 +77,5 @@ bash scripts/git_sync.sh -m "<类型: 中文说明本次修改内容>"
 - `IDENTITY.md` 仍保留为 OpenClaw / workspace 身份兼容入口
 - `SOUL.md` 仍保留为简化行为原则入口
 - 原 `USER.md` 与 `TOOLS.md` 已并入本文件
+- `USER.md`、`TOOLS.md`、`HEARTBEAT.md` 如由本地工具生成，按工作区本地文件处理，不作为项目真源
 - 原 `AI_AUTOCOMMIT.md` 规则已并入 `docs/github-workflow.md`

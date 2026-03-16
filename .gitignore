@@ -1,6 +1,7 @@
 # IDE
 .idea/
 .vscode/
+.openclaw/
 
 # Python cache
 __pycache__/
@@ -27,6 +28,9 @@ qq-bot/logs/
 !.env.example
 qq-bot/config.yaml
 ops/paperclip.local.env
+HEARTBEAT.md
+USER.md
+TOOLS.md
 
 # Runtime data
 qq-bot/data/**
