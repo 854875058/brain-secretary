@@ -1,7 +1,7 @@
 # 部署手册
 
 > 文档: `SETUP.md`
-> 更新: 2026-03-07
+> 更新: 2026-03-16
 
 ---
 
@@ -33,6 +33,8 @@ Windows 仍可手工启动，但以 Linux 常驻方案为主。
 
 当前主模型：`penguin/claude-sonnet-4-6`。
 备注：2026-03-10 已将默认模型从 `gpt-5.1` 切走，因为上游 distributor 连续返回 `503 No available channel for model gpt-5.1`。
+
+另外，仓库已新增 `AgentTeam` 状态图骨架与私有知识库统一入口，用于后续把复杂业务流收敛到标准状态总线、私有记忆检索和 review 闭环；当前它是开发骨架，不是独立常驻服务。
 
 ---
 
@@ -116,6 +118,37 @@ python3 scripts/ops_manager.py logs gateway -n 80
 ```
 
 详细 Linux 运维：`docs/systemd-ops.md`
+
+---
+
+## AgentTeam 状态图骨架（开发入口）
+
+如果你要在当前仓库里继续进化“私有知识库 + 状态管理 + 多 Agent 协同”这条线，优先从以下文件入手：
+
+- 文档：`docs/agent-team-state-graph.md`
+- 私有知识库模块：`qq-bot/bot/private_kb.py`
+- 状态图协调模块：`qq-bot/bot/agent_team.py`
+- Demo 脚本：`scripts/agent_team_demo.py`
+- 隔离单测：`tests/test_agent_team.py`
+
+本地 mock 验证：
+
+```bash
+python3 scripts/agent_team_demo.py --mode mock --json
+python3 -m unittest tests.test_agent_team -v
+```
+
+如果你想直接走 OpenClaw 节点而不是 mock：
+
+```bash
+python3 scripts/agent_team_demo.py --mode openclaw --context "请把这份 PDF 财务报表转成 Markdown 并提取关键指标"
+```
+
+注意：
+
+- 它当前不会替代现网 `qqbot/default -> qq-main` 主链路
+- 它也不是新的 systemd 服务
+- 它的目标是给后续多 agent 业务流提供统一骨架，而不是引入第二套生产入口
 
 ---
 

@@ -1,13 +1,14 @@
 # HANDOVER.md
 
 > 给后续接手的助手 / Claude / Codex 读
-> 更新: 2026-03-11
+> 更新: 2026-03-16
 
 ---
 
 ## 一句话状态
 
 当前现网 QQ 入口已经从 `NapCat -> qq-bot` 迁移到 OpenClaw 原生 `qqbot` 渠道，并保持 **方案 B：`qq-main` 协调大脑 + 多个真实子 agent**；项目自动进化现改由内部 agent `auto-evolve-main` 驱动。
+仓库内已补上 `AgentTeam` 状态图骨架与私有知识库统一入口，作为后续多 agent 业务流的标准开发骨架，但当前还没有替代现网主调度链路。
 
 ---
 
@@ -131,6 +132,7 @@ ss -lntp | rg ':80 |:18789 '
 - OpenClaw 配置：`/root/.openclaw/openclaw.json`
 - 脑 workspace：`/root/.openclaw/workspace`
 - 运维真源：`/root/brain-secretary/ops/deployment_manifest.json`
+- AgentTeam 状态图文档：`/root/brain-secretary/docs/agent-team-state-graph.md`
 - 项目注册表：`/root/brain-secretary/ops/project_registry.json`
 - 自动进化配置：`/root/brain-secretary/ops/auto-evolve.json`
 - 双轨分支配置：`/root/brain-secretary/ops/project-sync.json`
@@ -141,6 +143,9 @@ ss -lntp | rg ':80 |:18789 '
 - NapCat 多实例脚本：`/root/brain-secretary/scripts/napcat_multi.py`
 - NapCat 多实例根目录：`/root/napcat-multi`
 - OpenClaw 内部入口：`http://127.0.0.1:18789/`
+- AgentTeam 状态图模块：`/root/brain-secretary/qq-bot/bot/agent_team.py`
+- AgentTeam 私有知识库模块：`/root/brain-secretary/qq-bot/bot/private_kb.py`
+- AgentTeam demo：`/root/brain-secretary/scripts/agent_team_demo.py`
 - 旧桥接代码：`/root/brain-secretary/qq-bot/`
 - 已退役历史页面：`http://110.41.170.155/chat-history`、`http://110.41.170.155/api/chat-history`（返回 `410`）
 
@@ -152,6 +157,7 @@ ss -lntp | rg ':80 |:18789 '
 - `plugins.installs.qqbot` 已记录标准 npm 安装来源：`@openclaw-china/qqbot`
 - `QQ Bot default` 渠道已配置、启用
 - `qqbot:default -> qq-main` 绑定已生效
+- `AgentTeam` 状态图骨架已入仓库，`scripts/agent_team_demo.py --mode mock --json` 与 `tests/test_agent_team.py` 已可运行
 - `openclaw-qq-bridge.service` 已停用并禁用
 - `napcat-qq.service` 已停用并禁用
 - 公网 `/chat-history` 与 `/api/chat-history` 已明确返回 `410`，不再依赖桥接服务
@@ -169,6 +175,7 @@ ss -lntp | rg ':80 |:18789 '
 ## 接手时不要做的事
 
 - 不要把 QQ 入口从 `qq-main` 改到子 agent，除非在做明确架构变更
+- 不要把 `AgentTeam` demo 或 mock 骨架误认为现网常驻服务；当前现网主入口仍然是 `qqbot/default -> qq-main`
 - 不要把 token / client secret / API key 抄进文档或聊天
 - 不要为了“临时验证”重新启用 `openclaw-qq-bridge.service` 与 `napcat-qq.service`，除非是在做明确回滚
 

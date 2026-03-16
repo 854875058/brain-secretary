@@ -8,7 +8,8 @@
       "setup": "SETUP.md",
       "systemd_ops": "docs/systemd-ops.md",
       "claude_rules": "CLAUDE.md",
-      "project_sync": "docs/project-sync-branch-workflow.md"
+      "project_sync": "docs/project-sync-branch-workflow.md",
+      "agent_team_state_graph": "docs/agent-team-state-graph.md"
     },
     "project_sync_config": "ops/project-sync.json",
     "project_registry": "ops/project_registry.json",
@@ -17,7 +18,10 @@
     "auto_evolve_apply_script": "scripts/project_auto_evolve_apply.sh",
     "auto_evolve_systemd_unit": "ops/systemd/openclaw-project-auto-evolve.service",
     "branch_guard_script": "scripts/git_branch_guard.py",
-    "auto_evolve_reconcile_script": "scripts/reconcile_auto_evolve_agent.py"
+    "auto_evolve_reconcile_script": "scripts/reconcile_auto_evolve_agent.py",
+    "agent_team_core_module": "qq-bot/bot/agent_team.py",
+    "private_kb_module": "qq-bot/bot/private_kb.py",
+    "agent_team_demo_script": "scripts/agent_team_demo.py"
   },
   "models": {
     "primary_brain": {
@@ -84,6 +88,10 @@
     "public_proxy_config": "/etc/nginx/sites-available/openclaw-public.conf",
     "project_memory": "MEMORY.md",
     "fine_grained_memory": "memory",
+    "agent_team_doc": "docs/agent-team-state-graph.md",
+    "agent_team_core_module": "qq-bot/bot/agent_team.py",
+    "private_kb_module": "qq-bot/bot/private_kb.py",
+    "agent_team_demo_script": "scripts/agent_team_demo.py",
     "legacy_qq_bridge_entry": "qq-bot/main.py",
     "legacy_qq_bridge_config": "qq-bot/config.yaml",
     "legacy_qq_bridge_logs": "qq-bot/logs",
@@ -162,7 +170,8 @@
         "python3 scripts/project_auto_evolve_daemon.py exceptions --json",
         "python3 scripts/project_auto_evolve_daemon.py once --project tower-eye --json",
         "bash scripts/project_auto_evolve_apply.sh",
-        "python3 scripts/ops_manager.py logs project_auto_evolve -n 80"
+        "python3 scripts/ops_manager.py logs project_auto_evolve -n 80",
+        "python3 scripts/agent_team_demo.py --mode mock --json"
       ],
       "components": {
         "model_proxy": {
@@ -351,7 +360,8 @@
         "python3 scripts/project_sync.py prepare-work --config ops/project-sync.json --project multimodal-retrieval",
         "python3 scripts/project_sync.py prepare-agent --config ops/project-sync.json --project multimodal-retrieval",
         "python3 scripts/project_sync.py promote-agent --config ops/project-sync.json --project multimodal-retrieval",
-        "powershell -ExecutionPolicy Bypass -File scripts\\windows_project_autosync.ps1 -Project multimodal-retrieval -IntervalSeconds 120"
+        "powershell -ExecutionPolicy Bypass -File scripts\\windows_project_autosync.ps1 -Project multimodal-retrieval -IntervalSeconds 120",
+        "py -3 scripts\\agent_team_demo.py --mode mock --json"
       ],
       "components": {
         "gateway": {

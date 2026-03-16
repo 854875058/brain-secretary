@@ -1,6 +1,6 @@
 # OpenClaw 配置说明（qqbot 渠道）
 
-> 更新：2026-03-09
+> 更新：2026-03-16
 > 当前现网 QQ 入口：OpenClaw 原生 `qqbot` 渠道
 
 ---
@@ -118,6 +118,29 @@ systemctl --user restart openclaw-gateway.service
 - 旧版目录与新包同名时，直接再次执行 `openclaw plugins install` 可能会遇到 `plugin already exists`；先备份 `/root/.openclaw/openclaw.json`，再做原位替换或在干净环境安装
 - 迁移完成后，确认 `/root/.openclaw/openclaw.json` 中存在 `plugins.installs.qqbot`，并重启 `openclaw-gateway.service`
 - `openclaw plugins list` 里的版本列来自 `openclaw.plugin.json`，可能与 npm 包版本不同；以 `plugins.installs.qqbot` 或 `/root/.openclaw/extensions/qqbot/package.json` 为准
+
+
+## AgentTeam 状态图骨架与 OpenClaw 的关系
+
+仓库已新增一套面向复杂业务流的 `AgentTeam` 状态图骨架：
+
+- `qq-bot/bot/agent_team.py`
+- `qq-bot/bot/private_kb.py`
+- `scripts/agent_team_demo.py`
+- `docs/agent-team-state-graph.md`
+
+它和当前 OpenClaw 配置的关系是：
+
+- 默认研究 / 执行节点使用 `brain-secretary-dev`
+- 默认复核节点使用 `brain-secretary-review`
+- 每个节点会使用独立 session 命名空间，例如：`agentteam:<hash>:<phase>:<slug>`
+- 默认先走仓库内骨架和 demo，不要求修改 `/root/.openclaw/openclaw.json`
+
+也就是说：
+
+- 这套骨架可以复用当前现有 agent
+- 但它当前不是新的现网入口
+- 也没有替代 `qqbot/default -> qq-main` 的生产绑定关系
 
 
 ## 模型代理兼容修复

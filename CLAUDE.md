@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 > 本文件给后续助手 / Claude / Codex / 自动化运维流程读取。
-> 更新: 2026-03-11
+> 更新: 2026-03-16
 
 ---
 
@@ -44,6 +44,8 @@
 - `auto-evolve-main` 负责：按 `ops/auto-evolve.json` 周期性驱动注册项目做内部自动进化，但不承接 QQ 入口流量
 - `brain-secretary-dev` 负责主仓工程实施：OpenClaw 接入、运维脚本、部署文档、现网迁移与工程改造
 - 旧的次级实验仓已退役；如需旧实现对照，直接参考历史资料，不再派发到独立次仓。
+- 仓库已新增 `AgentTeam` 状态图骨架：`qq-bot/bot/agent_team.py` + `qq-bot/bot/private_kb.py`
+- 这套骨架用于把多 agent 业务流收敛到统一状态总线、私有知识库检索和 review 闭环；当前默认是仓库内开发入口，不替代现网 `qq-main` 主调度链路
 
 ### OpenClaw 配置关键点
 
@@ -107,6 +109,7 @@
 - 交接文档：`HANDOVER.md`
 - Linux 运维文档：`docs/systemd-ops.md`
 - OpenClaw 配置文档：`docs/openclaw-setup.md`
+- AgentTeam 状态图文档：`docs/agent-team-state-graph.md`
 - 部署手册：`SETUP.md`
 - OpenClaw 配置：`/root/.openclaw/openclaw.json`
 - OpenClaw 插件目录：`/root/.openclaw/extensions/qqbot`
@@ -121,6 +124,7 @@
 - Windows 本地自检批处理：`scripts/windows_local_qq_doctor.bat`
 - Windows 本地远程应用脚本：`scripts/windows_local_qq_remote_apply.ps1`
 - 桥接记忆中心脚本：`scripts/memory_center.py`
+- AgentTeam demo：`scripts/agent_team_demo.py`
 - 双轨分支同步脚本：`scripts/project_sync.py`
 - 双轨分支配置：`ops/project-sync.json`
 - 自动进化配置：`ops/auto-evolve.json`
@@ -146,6 +150,8 @@
 - Paperclip Bootstrap：`scripts/paperclip_bootstrap.sh`
 - Paperclip 运行时部署：`scripts/paperclip_runtime_apply.sh`
 - Paperclip Seed：`scripts/paperclip_seed.py`
+- AgentTeam 私有知识库模块：`qq-bot/bot/private_kb.py`
+- AgentTeam 状态图模块：`qq-bot/bot/agent_team.py`
 - NapCat 多实例根目录：`/root/napcat-multi`
 - QQ Bridge 多实例根目录：`/root/qq-bot-multi`
 - Windows 本地三开文档：`docs/windows-local-qq-multi.md`
@@ -196,6 +202,7 @@ openclaw agents bindings --json
 - 当前主链路默认使用 `penguin/claude-sonnet-4-6`；`model-proxy.mjs` 主要保留给 OpenAI-compatible 备用源兼容
 - `model-proxy.mjs` 已兼容 `stream=true -> 上游 JSON -> 本地 SSE`，历史上也支持把 `vllm/gpt-5.4` 转成上游可识别的 `gpt-5.4`
 - `scripts/napcat_multi.py` 已生成 3 个隔离的扫码示例目录：`/root/napcat-multi/{brain,tech,review}`
+- 仓库已新增 `AgentTeam` 状态图骨架、私有知识库统一入口、demo 脚本和隔离单测；当前已验证 mock demo 和 `tests/test_agent_team.py` 可运行
 - 旧 `NapCat / qq-bot(FastAPI Bridge)` 现网服务已停用
 - `/chat-history` 与 `/api/chat-history` 已在公网明确返回 `410`，避免旧入口残留 502
 
