@@ -1,199 +1,159 @@
 # 系统架构详解
 
-> 说明：2026-03-07 起，现网已经落地 `qq-main` 协调大脑 + `brain-secretary-dev` 真实子 agent。具体以 `README.md`、`docs/openclaw-setup.md`、`HANDOVER.md` 为准。
-
-
-> 文档: ARCHITECTURE.md
-> 更新: 2026-03-06
+> 文档：`ARCHITECTURE.md`
+> 更新：2026-03-16
+> 说明：本文件描述当前已落地架构；早期 `NapCat -> FastAPI -> OpenClaw` 单主链路方案现在只保留为历史兼容和辅助入口参考。
 
 ---
 
-## 一、整体通信流程
+## 一、架构总览
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                          你（用户）                              │
-│                     用手机/电脑打开 QQ                           │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │ 私聊消息（自然语言指令）
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    NapCat（QQ 协议层）                           │
-│  • 模拟 QQ 客户端，监听消息事件                                  │
-│  • 安装路径: D:\NapCat\                                         │
-│  • 协议: OneBot 11                                              │
-│  • 推送方式: HTTP POST 到本地端口                               │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │ HTTP POST /qq/message
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│          QQ Bridge（FastAPI，本仓库 qq-bot/）                     │
-│                                                                 │
-│  职责:                                                          │
-│  1. 接收 OneBot 11 消息事件                                      │
-│  2. 为每个 QQ 会话生成稳定的 OpenClaw session-id                  │
-│  3. 调用 OpenClaw：openclaw agent --session-id ...                │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │ WebSocket / RPC
-                           ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                  大脑 Brain（OpenClaw Agent）                    │
-│                                                                 │
-│  职责:                                                          │
-│  1. 接收并理解你的自然语言指令                                   │
-│  2. 判断需要哪个子 Agent 处理                                    │
-│  3. 向子 Agent 下发结构化任务                                    │
-│  4. 等待子 Agent 汇报                                           │
-│  5. 对结果进行验收测试                                           │
-│  6. 将结果通过 QQ 回复给你                                       │
-│                                                                 │
-│  运行环境: OpenClaw Gateway (http://127.0.0.1:18789)            │
-│  AI 模型: penguin/claude-sonnet-4-6                            │
-└──────────┬────────────────────────────┬────────────────────────┘
-           │ 任务指令                    │ 任务指令
-           ▼                            ▼
-┌─────────────────────┐    ┌─────────────────────┐    ┌──────────
-│  Agent A            │    │  Agent B            │    │  Agent C
-│  (数据集处理)        │    │  (爬虫任务)          │    │  (文档转
-│                     │    │                     │    │
-│  • PDF转换          │    │  • 数据抓取          │    │  • ...
-│  • Excel处理        │    │  • Token统计         │    │
-└──────────┬──────────┘    └──────────┬──────────┘    └──────────
-           │ 汇报结果                  │ 汇报结果
-           └──────────────┬───────────┘
-                          │
-                          ▼
-                    大脑接收汇报
-                    → 执行验收测试
-                    → QQ 回复你
-```
+当前系统围绕 OpenClaw 多 agent 运行，分成三层：
+
+| 层 | 组件 | 作用 |
+|---|---|---|
+| 入口层 | `qqbot/default`、辅助 NapCat/QQ Bridge 实例 | 接收 QQ 消息并把入口统一交给指定 agent |
+| 协调层 | `qq-main`、`auto-evolve-main` | 负责主会话协调与自动进化协调 |
+| 执行层 | `brain-secretary-dev`、`brain-secretary-review`、Paperclip、项目双轨分支 | 负责工程实施、验收复核、协同投影与项目闭环 |
 
 ---
 
-## 二、大脑（Brain）设计
+## 二、现网主链路
 
-### 核心状态机
+当前正式 QQ 主链路是：
 
-```
-[等待指令]
-    │
-    ▼
-[解析指令] → 不明确 → [向你追问]
-    │
-    ▼
-[选择 Agent]
-    │
-    ▼
-[下发任务] → 超时 → [报告超时]
-    │
-    ▼
-[等待汇报]
-    │
-    ▼
-[验收测试] → 不通过 → [重试/报告失败]
-    │
-    ▼
-[QQ 回复结果]
-    │
-    ▼
-[等待指令]
+```text
+QQ Bot (qqbot/default)
+  -> OpenClaw(qq-main)
+  -> 子 agents(按需调用)
+  -> qq-main
+  -> QQ Bot
+  -> QQ
 ```
 
-### 大脑的职责边界
+其中：
 
-| 大脑负责 | 大脑不负责 |
-|---------|-----------|
-| 理解自然语言 | 具体业务逻辑 |
-| 任务路由分发 | 文件的实际处理 |
-| 结果验收 | 数据的具体转换 |
-| QQ 消息收发 | 爬虫的具体实现 |
-| 任务状态管理 | 模型的训练细节 |
+- `qq-main` 负责理解意图、拆任务、委派子 agent、汇总结果、统一回复
+- 真实工程实施优先由 `brain-secretary-dev` 承接
+- 方案补充和验收复核由 `brain-secretary-review` 承接
+- 只要 `qq-main` 调用了子 agent，协同过程就会被自动投影到 Paperclip 父子 issue
 
 ---
 
-## 三、子 Agent 设计
+## 三、自动进化链路
 
-每个 Agent 是一个**独立进程**，专注于一类任务：
+项目自动进化使用独立协调脑，不和 QQ 主会话混用：
 
-| Agent | 负责项目 | 对应现有目录 |
-|-------|---------|------------|
-| 数据集 Agent | PDF/Word/PPT 转换 | PDF-Excel, PDF-PPT, PDF转md 等 |
-| 爬虫 Agent | 数据采集、Token统计 | 现有爬虫脚本 |
-| 文档 Agent | Word/文档处理 | Word-Excel, 读取doc文件 等 |
-| 通用 Agent | 临时/其他任务 | - |
-
-### Agent 通信接口（规范）
-
+```text
+openclaw-project-auto-evolve.service
+  -> OpenClaw(auto-evolve-main)
+  -> brain-secretary-dev / brain-secretary-review
+  -> agent 分支提交
+  -> Paperclip 投影
 ```
-大脑 → Agent（任务下发）:
-{
-  "task_id": "uuid",
-  "type": "convert_pdf",
-  "params": { ... },
-  "callback_url": "http://brain/callback"
-}
 
-Agent → 大脑（结果汇报）:
-{
-  "task_id": "uuid",
-  "status": "success" | "failed",
-  "result": { ... },
-  "error": "..." (如果失败)
-}
-```
+关键约束：
+
+- `auto-evolve-main` 只给自动进化守护使用，不绑定 `qqbot/default`
+- 自动进化默认使用 fresh session，避免旧上下文污染
+- 自动进化前会先修复 `main / work / agent` 分支边界
+- 当前注册项目以 `ops/auto-evolve.json`、`ops/project-sync.json`、`ops/project_registry.json` 为准
 
 ---
 
-## 四、NapCat 接入层
+## 四、辅助多 QQ 链路
 
-### 消息流
+除现网主入口外，仓库还保留辅助多 QQ 联调链路：
 
-```
-QQ 消息 → NapCat 事件 → HTTP POST → QQ Bridge → OpenClaw → QQ Bridge → NapCat API → QQ 消息
-```
-
-### NapCat 关键配置
-
-```json
-{
-  "http": {
-    "enable": true,
-    "host": "0.0.0.0",
-    "port": 3000,
-    "post": [
-      {
-        "url": "http://127.0.0.1:8000/qq/message",
-        "secret": "你的密钥"
-      }
-    ]
-  }
-}
+```text
+NapCat(instance)
+  -> QQ Bridge(instance)
+  -> OpenClaw(target agent)
 ```
 
-### 已知问题
+默认映射：
 
-- NapCat 注入 QQ 后有时触发 QQ 文件校验失败（提示"文件损坏，请重新安装"）
-- 解决方法：见 [docs/napcat-setup.md](./docs/napcat-setup.md)
+- `brain` -> `qq-main`
+- `tech` -> `brain-secretary-dev`
+- `review` -> `brain-secretary-review`
+
+这条链路用于：
+
+- 多 QQ 号扫码联调
+- Windows 本地 `QQ + NapCat`，服务器侧 `QQ Bridge + OpenClaw`
+- 特定辅助入口测试
+
+它不是当前现网主入口。
 
 ---
 
-## 五、OpenClaw 环境
+## 五、当前 agent 拓扑
 
-| 项目 | 配置 |
-|------|------|
-| 版本 | 2026.3.2 |
-| Gateway 地址 | http://127.0.0.1:18789 |
-| Dashboard | http://127.0.0.1:18789/ |
-| 配置文件 | D:\openclaw\openclaw.json |
-| AI 模型 | penguin/claude-sonnet-4-6 |
-| Node.js | v25.2.1 |
+| agent id | 角色 | workspace |
+|---|---|---|
+| `qq-main` | 协调大脑 | `/root/.openclaw/workspace` |
+| `auto-evolve-main` | 自动进化专用内部协调 agent | `/root/.openclaw/workspace` |
+| `brain-secretary-dev` | 工程实施子 agent | `/root/brain-secretary` |
+| `brain-secretary-review` | 方案 / 验收子 agent | `/root/brain-secretary` |
+
+关键规则：
+
+- `qqbot/default` 只能绑定到 `qq-main`
+- 不要为了省事把主入口直接绑到子 agent
+- `project_auto_evolve` 不得直接占用 `qq-main` 主会话
 
 ---
 
-## 六、待决策事项
+## 六、关键支撑系统
 
-- [ ] 大脑与 Agent 之间用什么协议通信？（HTTP / WebSocket / 消息队列）
-- [ ] 多个 Agent 如何并行运行而不互相干扰？
-- [ ] 验收测试的标准如何定义？（每类任务不同）
-- [ ] 大脑是否需要持久化任务历史？用什么存储？
-- [ ] NapCat 与 QQ 版本锁定策略？（避免升级导致 Hook 失效）
+### 1. OpenClaw
+
+- 当前生效配置：`/root/.openclaw/openclaw.json`
+- 当前默认模型：`penguin/claude-sonnet-4-6`
+- `model-proxy.mjs` 主要保留给 OpenAI-compatible 备用源兼容，必须透传 `messages` / `tools`
+
+### 2. 统一运维
+
+- 运维统一入口：`scripts/ops_manager.py`
+- 运维真源：`ops/deployment_manifest.json`
+- Linux 推荐部署方式：`systemd --user(OpenClaw + projection + auto-evolve)` + `systemd(Paperclip)` + `nginx`
+
+### 3. Paperclip
+
+- 角色：QQ/OpenClaw 后方的任务控制面和协同投影面板
+- 内部地址：`http://127.0.0.1:3110`
+- 公网 viewer：`http://110.41.170.155/paperclip/`
+- 默认只做展示和控制面，不替代主 QQ 入口
+
+### 4. 项目双轨分支
+
+- 项目真源：`ops/project_registry.json`
+- 双轨配置：`ops/project-sync.json`
+- 自动进化配置：`ops/auto-evolve.json`
+- 目标：把“白天人工开发”和“夜间 agent 自动进化”拆到不同分支
+
+---
+
+## 七、历史兼容说明
+
+仓库内仍保留一些历史或规划目录：
+
+- `qq-bot/`：旧桥接实现，现作为历史参考和辅助多 QQ 桥接层
+- `qq-bridge/`：早期接入层说明
+- `brain/`、`agents/`：早期规划目录，不代表当前运行时实现边界
+
+如果这些文档与现网说明冲突，优先级按以下顺序判断：
+
+1. `CLAUDE.md`
+2. `HANDOVER.md`
+3. `ops/deployment_manifest.json`
+4. `docs/systemd-ops.md`
+5. `docs/openclaw-setup.md`
+
+---
+
+## 八、当前主要风险
+
+- `channels.qqbot.allowFrom=["*"]` 仍是多用户信任边界风险
+- `dangerouslyDisableDeviceAuth=true` 和认证限流未配置，仍有安全告警
+- 文档中仍保留部分 2026-03-06 到 2026-03-07 的早期规划表述，阅读时需要区分“历史方案”和“当前实现”
