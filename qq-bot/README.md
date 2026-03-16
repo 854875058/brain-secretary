@@ -31,6 +31,7 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents
 - NapCat OneBot 11 事件接收
 - 为桥接会话生成稳定的 OpenClaw `session-id`
 - 调用 OpenClaw 并把回复回发到 QQ
+- 为新的 `bot/agent_team.py` 状态图协调框架提供会话、记忆和 OpenClaw 调用基础
 - 基础管理命令
 - 记忆沉淀与 watchdog
 - Paperclip 兼容桥接命令

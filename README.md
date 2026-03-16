@@ -98,6 +98,7 @@ brain-secretary/
 - 想按类别找文档 → `docs/README.md`
 - 想看当前运维方式 → `docs/systemd-ops.md`
 - 想看 OpenClaw 多 Agent 配置 → `docs/openclaw-setup.md`
+- 想看新的 AgentTeam 状态图骨架 → `docs/agent-team-state-graph.md`
 - 想看概念层说明 → `docs/concepts/brain.md`、`docs/concepts/agents.md`
 - 想看 Windows 本地三开 QQ 对接 → `docs/windows-local-qq-multi.md`
 - 想看 Windows / 服务器项目双轨分支协作 → `docs/project-sync-branch-workflow.md`
