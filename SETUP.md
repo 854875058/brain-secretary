@@ -35,6 +35,7 @@ Windows 仍可手工启动，但以 Linux 常驻方案为主。
 备注：2026-03-10 已将默认模型从 `gpt-5.1` 切走，因为上游 distributor 连续返回 `503 No available channel for model gpt-5.1`。
 
 另外，仓库已新增 `AgentTeam` 状态图骨架与私有知识库统一入口，用于后续把复杂业务流收敛到标准状态总线、私有记忆检索和 review 闭环；当前它是开发骨架，不是独立常驻服务。
+仓库也已新增 `AgentTeam -> Paperclip` 同步器，可把外部项目的 AgentTeam 状态 API 映射成 Paperclip 父子 issue，方便网页端和 QQ 侧观察运行状态。
 
 ---
 
@@ -204,6 +205,23 @@ python3 scripts/paperclip_cli.py status --json
 python3 scripts/paperclip_cli.py agents --json
 python3 scripts/paperclip_projection_daemon.py once --json
 python3 scripts/paperclip_cli.py run --agent brain-secretary-dev --title "检查测试失败" --description "先跑测试再给建议" --json
+```
+
+如果你还想把外部 AgentTeam 的状态同步到 Paperclip：
+
+```bash
+export QQ_BOT_AGENTTEAM_ENABLED=true
+export QQ_BOT_AGENTTEAM_API_BASE_URL=http://127.0.0.1:8090/api/agents
+export QQ_BOT_PAPERCLIP_ENABLED=true
+export QQ_BOT_PAPERCLIP_API_BASE_URL=http://127.0.0.1:3110
+export QQ_BOT_PAPERCLIP_COMPANY_ID=<company-id>
+python3 scripts/agentteam_paperclip_sync.py once --json
+```
+
+持续同步：
+
+```bash
+python3 scripts/agentteam_paperclip_sync.py watch --interval 30
 ```
 
 ---

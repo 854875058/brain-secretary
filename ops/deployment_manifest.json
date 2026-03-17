@@ -115,6 +115,7 @@
     "paperclip_cli_script": "scripts/paperclip_cli.py",
     "paperclip_ui_zh_patch_script": "scripts/paperclip_ui_zh_patch.py",
     "paperclip_projection_daemon_script": "scripts/paperclip_projection_daemon.py",
+    "agentteam_paperclip_sync_script": "scripts/agentteam_paperclip_sync.py",
     "paperclip_projection_apply_script": "scripts/paperclip_projection_apply.sh",
     "paperclip_projection_systemd_unit": "ops/systemd/openclaw-paperclip-projection.service"
   },
@@ -162,6 +163,7 @@
         "python3 scripts/paperclip_cli.py status --json",
         "bash scripts/paperclip_projection_apply.sh",
         "python3 scripts/paperclip_projection_daemon.py once --json",
+        "python3 scripts/agentteam_paperclip_sync.py once --json",
         "python3 scripts/ops_manager.py logs paperclip_projection -n 80",
         "python3 scripts/reconcile_auto_evolve_agent.py --json",
         "python3 scripts/project_auto_evolve_daemon.py status --json",

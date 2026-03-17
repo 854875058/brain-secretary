@@ -1,7 +1,7 @@
 # Paperclip + QQ + OpenClaw 闭环说明
 
 > 文档：`docs/paperclip-qq-bridge.md`
-> 更新：2026-03-09
+> 更新：2026-03-17
 
 ---
 
@@ -45,6 +45,7 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents
 - 每个 Paperclip agent 都映射到对应 OpenClaw agent
 - Paperclip viewer 通过 `nginx + basic auth` 对外提供只读/可操作网页入口
 - QQ / CLI 的 `/pc-run` 会创建 `todo` issue，并自动触发对应 agent
+- 可选把外部 AgentTeam 状态 API 投影为 Paperclip 父子 issue，方便在网页端持续观察 backlog、当前模式和活跃任务
 
 当前 OpenClaw gateway 适配器使用固定 session key，避免出现：
 
@@ -162,6 +163,23 @@ python3 scripts/paperclip_cli.py issues --json
 python3 scripts/paperclip_projection_daemon.py once --json
 ```
 
+如果要把外部 AgentTeam（例如 `multimodal-data-lake`）同步进 Paperclip：
+
+```bash
+export QQ_BOT_AGENTTEAM_ENABLED=true
+export QQ_BOT_AGENTTEAM_API_BASE_URL=http://127.0.0.1:8090/api/agents
+export QQ_BOT_PAPERCLIP_ENABLED=true
+export QQ_BOT_PAPERCLIP_API_BASE_URL=http://127.0.0.1:3110
+export QQ_BOT_PAPERCLIP_COMPANY_ID=<company-id>
+python3 scripts/agentteam_paperclip_sync.py once --json
+```
+
+持续同步：
+
+```bash
+python3 scripts/agentteam_paperclip_sync.py watch --interval 30
+```
+
 创建并触发一个任务：
 
 ```bash
@@ -219,3 +237,9 @@ Paperclip 不替代它，只提供：
 1. 你继续在 QQ 找 `qq-main`
 2. `qq-main` 正常聊天仍走 OpenClaw 主入口；一旦它调用子 agent，自动投影服务会同步到 Paperclip
 3. 你同时可以在网页端看任务、父子 issue 和执行日志
+
+如果再叠加 `AgentTeam -> Paperclip` 同步器：
+
+- `qq-main` 的子 agent 协同仍走现有自动投影
+- 外部 AgentTeam 的 `/api/agents/status` 和 `/api/agents/tasks` 会被映射成另一组父子 issue
+- 你可以继续用 QQ 的 `/pc-issues`、`/pc-issue` 在 QQ 里查看这些同步后的 issue

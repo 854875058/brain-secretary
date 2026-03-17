@@ -33,6 +33,7 @@
 - `openclaw-setup.md`：OpenClaw agent / 渠道 / Paperclip 约束
 - `paperclip-qq-bridge.md`：Paperclip 相关接入
 - `agent-team-state-graph.md`：多 Agent 状态图骨架与私有知识库说明
+- `paperclip-qq-bridge.md` 里同时涵盖 AgentTeam / Paperclip 扩展接入说明
 - `windows-local-qq-multi.md`：Windows 本地多 QQ 方案
 - `project-sync-branch-workflow.md`：双轨分支与自动进化协作
 - `github-workflow.md`：Git 和自动提交约定
