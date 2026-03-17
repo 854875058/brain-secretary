@@ -41,6 +41,12 @@ ALLOWED_COMMANDS = {
     '/pc-run': '创建并唤醒 Paperclip 任务',
     '/pc-wake': '手动唤醒 Paperclip agent',
     '/pc-help': '查看 Paperclip 指令帮助',
+    '/at-status': '查看外部 AgentTeam 当前状态',
+    '/at-tasks': '查看外部 AgentTeam 任务队列',
+    '/at-task': '查看外部 AgentTeam 任务详情',
+    '/at-requests': '查看外部 AgentTeam 需求列表',
+    '/at-new': '向外部 AgentTeam 提交新需求',
+    '/at-help': '查看 AgentTeam 指令帮助',
 }
 
 

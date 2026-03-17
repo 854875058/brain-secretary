@@ -35,6 +35,7 @@ QQ Bot (qqbot/default) -> OpenClaw(qq-main) -> 子 agents
 - 基础管理命令
 - 记忆沉淀与 watchdog
 - Paperclip 兼容桥接命令
+- 外部 AgentTeam 状态 / 任务 / 需求桥接命令（`/at-*`）
 
 如果你需要现网主入口，请不要直接从这里理解系统主架构。
 
@@ -60,6 +61,21 @@ python3 scripts/qq_bot_multi.py bootstrap --json
 python3 scripts/qq_bot_multi.py status --json
 python3 scripts/napcat_multi.py qr --json
 ```
+
+### 外部 AgentTeam Bridge
+
+如果你想把其他项目里的 AgentTeam 接到当前 QQ 入口，配置：
+
+- `QQ_BOT_AGENTTEAM_ENABLED=true`
+- `QQ_BOT_AGENTTEAM_API_BASE_URL=http://127.0.0.1:8090/api/agents`
+
+然后就可以在 QQ 里使用：
+
+- `/at-status`
+- `/at-tasks`
+- `/at-task 任务编号`
+- `/at-requests`
+- `/at-new 标题|描述|优先级|验收标准`
 
 ### Windows 本地 QQ / NapCat
 

@@ -12,6 +12,8 @@ from bot.ai_client import PenguinAI
 from bot.openclaw_client import OpenClawClient, OpenClawError, OpenClawTurnResult
 from bot.qq_sender import QQSender
 from bot.command_handler import execute_command
+from bot.agentteam_client import AgentTeamClient, AgentTeamError
+from bot.agentteam_commands import run_agentteam_command
 from bot.paperclip_client import PaperclipClient, PaperclipError
 from bot.paperclip_commands import run_paperclip_command
 from bot.scheduler import setup_scheduled_tasks
@@ -117,6 +119,8 @@ EVOLUTION_EXTRA_KEYWORDS = [
 
 paperclip_cfg = config.get("paperclip") or {}
 paperclip = PaperclipClient.from_config(paperclip_cfg)
+agentteam_cfg = config.get("agentteam") or {}
+agentteam = AgentTeamClient.from_config(agentteam_cfg)
 
 # 自动扫描的项目目录
 PROJECT_SCAN_DIRS = config.get('project_dirs', [
@@ -334,6 +338,13 @@ async def handle_bot_command(cmd: str, user_id: int, reply_func):
         try:
             result = await asyncio.to_thread(run_paperclip_command, cmd, paperclip)
         except PaperclipError as exc:
+            result = str(exc)
+        await reply_func(result)
+
+    elif cmd == "/at-help" or cmd.startswith("/at-") or cmd == "/agentteam":
+        try:
+            result = await asyncio.to_thread(run_agentteam_command, cmd, agentteam)
+        except AgentTeamError as exc:
             result = str(exc)
         await reply_func(result)
 
